@@ -1,0 +1,21 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{28B16CBC-CA44-4ECF-88C1-F2347348A635}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnityUxmlGenerator", "src\UnityUxmlGenerator\UnityUxmlGenerator.csproj", "{F8D3D995-5DBC-490A-AA0B-36710A6E5226}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F8D3D995-5DBC-490A-AA0B-36710A6E5226} = {28B16CBC-CA44-4ECF-88C1-F2347348A635}
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F8D3D995-5DBC-490A-AA0B-36710A6E5226}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F8D3D995-5DBC-490A-AA0B-36710A6E5226}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F8D3D995-5DBC-490A-AA0B-36710A6E5226}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F8D3D995-5DBC-490A-AA0B-36710A6E5226}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
