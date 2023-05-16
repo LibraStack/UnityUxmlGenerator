@@ -65,7 +65,7 @@ namespace {{capture.ClassNamespace}}
         foreach (var (propertyName, uxmlAttributeDefaultValue) in properties)
         {
             var attributeUxmlName = propertyName.ToDashCase();
-            var attributeFieldName = propertyName.ToFieldName();
+            var attributeFieldName = propertyName.ToPrivateFieldName();
             var attributeDefaultValue = uxmlAttributeDefaultValue ?? string.Empty;
 
             stringBuilder.AppendLine($"\t\t\t{GeneratedCodeAttribute}");
@@ -86,7 +86,7 @@ namespace {{capture.ClassNamespace}}
 
         foreach (var (propertyName, _) in properties)
         {
-            var attributeFieldName = propertyName.ToFieldName();
+            var attributeFieldName = propertyName.ToPrivateFieldName();
 
             stringBuilder.AppendLine(
                 $"\t\t\t\tcontrol.{propertyName} = {attributeFieldName}.GetValueFromBag(bag, context);");

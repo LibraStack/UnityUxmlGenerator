@@ -4,9 +4,9 @@ namespace UnityUxmlGenerator.Extensions;
 
 internal static class StringExtensions
 {
-    public static string ToFieldName(this string propertyName)
+    public static string ToPrivateFieldName(this string propertyName)
     {
-        return string.Concat(char.ToLower(propertyName[0]), propertyName.Substring(1));
+        return string.Concat("_", char.ToLower(propertyName[0]), propertyName.Substring(1));
     }
 
     public static string ToDashCase(this string propertyName)

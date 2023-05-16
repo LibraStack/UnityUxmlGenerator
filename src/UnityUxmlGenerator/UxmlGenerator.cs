@@ -4,6 +4,8 @@ using UnityUxmlGenerator.SyntaxReceivers;
 
 namespace UnityUxmlGenerator;
 
+// TODO: Use a syntax tree API to generate source code.
+
 [Generator]
 internal sealed partial class UxmlGenerator : ISourceGenerator
 {
