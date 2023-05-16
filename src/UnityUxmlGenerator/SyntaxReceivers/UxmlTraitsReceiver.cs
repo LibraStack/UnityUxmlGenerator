@@ -27,14 +27,14 @@ internal sealed class UxmlTraitsReceiver : ISyntaxReceiver
 
         var @class = property?.GetParent<ClassDeclarationSyntax>();
 
-        if (@class is null || IsValid(@class, out var baseClassIdentifier) == false)
+        if (@class?.BaseList is null || @class.BaseList.Types.Count == 0)
         {
             return;
         }
 
         if (_captures.TryGetValue(@class.Identifier.Text, out var uxmlTraits) == false)
         {
-            uxmlTraits = new UxmlTraitsCapture(@class, baseClassIdentifier!);
+            uxmlTraits = new UxmlTraitsCapture(@class, @class.BaseList.Types.First().Type);
             _captures.Add(@class.Identifier.Text, uxmlTraits);
         }
 
@@ -49,17 +49,5 @@ internal sealed class UxmlTraitsReceiver : ISyntaxReceiver
             InvocationExpressionSyntax invocation => invocation.ArgumentList.Arguments.Single().Expression.GetText().ToString(),
             _ => null
         };
-    }
-
-    private static bool IsValid(ClassDeclarationSyntax @class, out string? baseClassIdentifier)
-    {
-        if (@class.BaseList == null)
-        {
-            baseClassIdentifier = default;
-            return false;
-        }
-
-        baseClassIdentifier = @class.BaseList.Types.First().Type.GetText().ToString().Trim();
-        return string.IsNullOrWhiteSpace(baseClassIdentifier) == false;
     }
 }

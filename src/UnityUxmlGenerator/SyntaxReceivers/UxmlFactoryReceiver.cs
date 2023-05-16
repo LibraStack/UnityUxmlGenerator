@@ -25,7 +25,7 @@ internal sealed class UxmlFactoryReceiver : ISyntaxReceiver
 
         var @class = attribute.GetParent<ClassDeclarationSyntax>();
 
-        if (@class is null)
+        if (@class?.BaseList is null || @class.BaseList.Types.Count == 0)
         {
             return;
         }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.CodeAnalysis;
+using UnityUxmlGenerator.Extensions;
 using UnityUxmlGenerator.SyntaxReceivers;
 
 namespace UnityUxmlGenerator;
@@ -6,6 +7,8 @@ namespace UnityUxmlGenerator;
 [Generator]
 internal sealed partial class UxmlGenerator : ISourceGenerator
 {
+    private const string VisualElementFullName = "UnityEngine.UIElements.VisualElement";
+
     public void Initialize(GeneratorInitializationContext context)
     {
         context.RegisterForSyntaxNotifications(() => new VisualElementReceiver());
@@ -13,8 +16,8 @@ internal sealed partial class UxmlGenerator : ISourceGenerator
 
     public void Execute(GeneratorExecutionContext context)
     {
-        context.AddSource("UxmlElementAttribute.g.cs", UxmlElementAttribute);
-        context.AddSource("UxmlAttributeAttribute.g.cs", UxmlAttributeAttribute);
+        context.AddSource($"{nameof(UxmlElementAttribute)}.g.cs", UxmlElementAttribute);
+        context.AddSource($"{nameof(UxmlAttributeAttribute)}.g.cs", UxmlAttributeAttribute);
 
         if (context.SyntaxReceiver is not VisualElementReceiver receiver)
         {
@@ -23,12 +26,20 @@ internal sealed partial class UxmlGenerator : ISourceGenerator
 
         foreach (var uxmlElement in receiver.UxmlFactoryReceiver.Captures)
         {
-            context.AddSource($"{uxmlElement.ClassIdentifier}.UxmlFactory.g.cs", GenerateUxmlFactory(uxmlElement));
+            if (uxmlElement.Class.InheritsFromFullyQualifiedName(context, VisualElementFullName))
+            {
+                context.AddSource($"{uxmlElement.ClassName}.UxmlFactory.g.cs", GenerateUxmlFactory(uxmlElement));
+            }
         }
 
         foreach (var capture in receiver.UxmlTraitsReceiver.Captures)
         {
-            context.AddSource($"{capture.Key}.UxmlTraits.g.cs", GenerateUxmlTraits(capture.Value));
+            var traitsCapture = capture.Value;
+
+            if (traitsCapture.Class.InheritsFromFullyQualifiedName(context, VisualElementFullName))
+            {
+                context.AddSource($"{traitsCapture.ClassName}.UxmlTraits.g.cs", GenerateUxmlTraits(context, traitsCapture));
+            }
         }
     }
 }

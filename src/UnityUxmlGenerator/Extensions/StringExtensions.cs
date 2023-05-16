@@ -6,7 +6,7 @@ internal static class StringExtensions
 {
     public static string ToFieldName(this string propertyName)
     {
-        return $"_{char.ToLower(propertyName[0])}{propertyName.Substring(1, propertyName.Length - 1)}";
+        return string.Concat(char.ToLower(propertyName[0]), propertyName.Substring(1));
     }
 
     public static string ToDashCase(this string propertyName)
