@@ -105,11 +105,11 @@ partial class CustomVisualElement
     public new class UxmlTraits : global::UnityEngine.UIElements.VisualElement.UxmlTraits
     {
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("UnityUxmlGenerator", "1.0.0.0")]
-        private readonly global::UnityEngine.UIElements.UxmlStringAttributeDescription customAttribute = new() 
+        private readonly global::UnityEngine.UIElements.UxmlStringAttributeDescription _customAttribute = new() 
             { name = "custom-attribute", defaultValue = "" };
 
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("UnityUxmlGenerator", "1.0.0.0")]
-        private readonly global::UnityEngine.UIElements.UxmlStringAttributeDescription customAttributeWithDefaultValue = new() 
+        private readonly global::UnityEngine.UIElements.UxmlStringAttributeDescription _customAttributeWithDefaultValue = new() 
             { name = "custom-attribute-with-default-value", defaultValue = "DefaultValue" };
 
         [global::System.CodeDom.Compiler.GeneratedCodeAttribute("UnityUxmlGenerator", "1.0.0.0")]
@@ -121,8 +121,8 @@ partial class CustomVisualElement
             base.Init(visualElement, bag, context);
 
             var control = (CustomVisualElement) visualElement;
-            control.CustomAttribute = customAttribute.GetValueFromBag(bag, context);
-            control.CustomAttributeWithDefaultValue = customAttributeWithDefaultValue.GetValueFromBag(bag, context);
+            control.CustomAttribute = _customAttribute.GetValueFromBag(bag, context);
+            control.CustomAttributeWithDefaultValue = _customAttributeWithDefaultValue.GetValueFromBag(bag, context);
         }
     }
 }
