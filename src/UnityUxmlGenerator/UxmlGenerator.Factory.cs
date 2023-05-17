@@ -10,25 +10,22 @@ internal sealed partial class UxmlGenerator
 {
     private static SourceText GenerateUxmlFactory(UxmlFactoryCapture capture)
     {
-        var @class = ClassDeclaration(capture.ClassName)
-            .AddModifiers(Token(SyntaxKind.PartialKeyword));
+        var @class = ClassDeclaration(capture.ClassName).AddModifiers(Token(SyntaxKind.PartialKeyword));
 
-        var classMembers = GetFactoryClassMembers(capture);
+        var factoryClass = GetFactoryClass(capture);
 
-        return GetCompilationUnit(@class, classMembers, capture.ClassNamespace).GetText(Encoding.UTF8);
+        return GetCompilationUnit(@class, capture.ClassNamespace, factoryClass).GetText(Encoding.UTF8);
     }
 
-    private static List<MemberDeclarationSyntax> GetFactoryClassMembers(UxmlFactoryCapture capture)
+    private static MemberDeclarationSyntax GetFactoryClass(UxmlFactoryCapture capture)
     {
         var uxmlFactoryBaseList =
             SimpleBaseType(
                 IdentifierName($"global::UnityEngine.UIElements.UxmlFactory<{capture.ClassName}, UxmlTraits>"));
 
-        var uxmlFactoryClass =
+        return
             ClassDeclaration("UxmlFactory")
                 .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.NewKeyword)))
                 .WithBaseList(BaseList(SingletonSeparatedList<BaseTypeSyntax>(uxmlFactoryBaseList)));
-
-        return new List<MemberDeclarationSyntax> { uxmlFactoryClass };
     }
 }

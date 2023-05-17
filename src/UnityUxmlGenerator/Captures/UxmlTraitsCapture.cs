@@ -12,7 +12,7 @@ internal sealed class UxmlTraitsCapture
         ClassNamespace = @class.GetParent<NamespaceDeclarationSyntax>()!.Name.ToString();
 
         BaseClassType = baseClassType;
-        Properties = new List<(string PropertyName, string? DefaultValue)>();
+        Properties = new List<(PropertyDeclarationSyntax property, string? DefaultValue)>();
     }
 
     public string ClassName { get; }
@@ -21,7 +21,7 @@ internal sealed class UxmlTraitsCapture
     public TypeSyntax BaseClassType { get; }
     public ClassDeclarationSyntax Class { get; }
 
-    public List<(string PropertyName, string? DefaultValue)> Properties { get; }
+    public List<(PropertyDeclarationSyntax property, string? DefaultValue)> Properties { get; }
 
     public string GetBaseClassName(out TypeSyntax? genericTypeSyntax)
     {

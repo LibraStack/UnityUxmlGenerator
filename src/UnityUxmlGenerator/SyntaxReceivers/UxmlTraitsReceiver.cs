@@ -38,7 +38,7 @@ internal sealed class UxmlTraitsReceiver : ISyntaxReceiver
             _captures.Add(@class.Identifier.Text, uxmlTraits);
         }
 
-        uxmlTraits.Properties.Add((property!.Identifier.Text, GetAttributeArgumentValue(attribute)));
+        uxmlTraits.Properties.Add((property!, GetAttributeArgumentValue(attribute)));
     }
 
     private static string? GetAttributeArgumentValue(AttributeSyntax attribute)

@@ -7,17 +7,11 @@ namespace UnityUxmlGenerator;
 internal sealed partial class UxmlGenerator
 {
     private static CompilationUnitSyntax GetCompilationUnit(TypeDeclarationSyntax typeDeclarationSyntax,
-        IReadOnlyList<MemberDeclarationSyntax>? memberDeclarations = null, string? @namespace = null,
-        BaseListSyntax? baseList = null)
+        string? @namespace = null, params MemberDeclarationSyntax[] memberDeclarations)
     {
-        if (memberDeclarations is not null)
+        if (memberDeclarations.Length != 0)
         {
             typeDeclarationSyntax = typeDeclarationSyntax.AddMembers(ProcessMemberDeclarations(memberDeclarations));
-        }
-
-        if (baseList is not null)
-        {
-            typeDeclarationSyntax = typeDeclarationSyntax.WithBaseList(baseList);
         }
 
         if (string.IsNullOrEmpty(@namespace))
