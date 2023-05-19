@@ -37,12 +37,12 @@ namespace {{AssemblyName.Name}}
     [global::System.AttributeUsageAttribute(global::System.AttributeTargets.Property, AllowMultiple = false, Inherited = false)]
     internal sealed class UxmlAttributeAttribute : global::System.Attribute
     {
-        public UxmlAttributeAttribute(string defaultValue = "")
+        public UxmlAttributeAttribute(object? defaultValue = default)
         {
-            DefaultValue = defaultValue ?? string.Empty;
+            DefaultValue = defaultValue;
         }
 
-        public string DefaultValue { get; }
+        public object? DefaultValue { get; }
     }
 }
 """;

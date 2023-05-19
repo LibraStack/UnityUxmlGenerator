@@ -5,11 +5,16 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using UnityUxmlGenerator.Captures;
 using UnityUxmlGenerator.Extensions;
+using UnityUxmlGenerator.Structs;
 
 namespace UnityUxmlGenerator;
 
 internal sealed partial class UxmlGenerator
 {
+    private const string UnityColorTypeFullName = "global::UnityEngine.Color";
+    private const string UnityUiElementsFullName = "global::UnityEngine.UIElements.{0}";
+    private const string UxmlColorAttributeDescription = "UxmlColorAttributeDescription";
+
     private static SourceText GenerateUxmlTraits(GeneratorExecutionContext context, UxmlTraitsCapture capture)
     {
         var @class = ClassDeclaration(capture.ClassName).AddModifiers(Token(SyntaxKind.PartialKeyword));
@@ -27,7 +32,7 @@ internal sealed partial class UxmlGenerator
             ClassDeclaration("UxmlTraits")
                 .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.NewKeyword)))
                 .WithBaseList(BaseList(SingletonSeparatedList<BaseTypeSyntax>(uxmlTraitsBaseList)))
-                .WithMembers(List(GetTraitsClassMembers(capture)));
+                .WithMembers(List(GetTraitsClassMembers(context, capture)));
     }
 
     private static string GetBaseClassName(GeneratorExecutionContext context, UxmlTraitsCapture capture)
@@ -56,9 +61,10 @@ internal sealed partial class UxmlGenerator
         return string.Empty;
     }
 
-    private static IEnumerable<MemberDeclarationSyntax> GetTraitsClassMembers(UxmlTraitsCapture capture)
+    private static IEnumerable<MemberDeclarationSyntax> GetTraitsClassMembers(GeneratorExecutionContext context, 
+        UxmlTraitsCapture capture)
     {
-        var members = new List<MemberDeclarationSyntax>(GetAttributeFields(capture));
+        var members = new List<MemberDeclarationSyntax>(GetAttributeFields(context, capture));
 
         var initMethodBody = new List<StatementSyntax>
         {
@@ -88,13 +94,13 @@ internal sealed partial class UxmlGenerator
                 .WithParameterList(ParameterList(SeparatedList<ParameterSyntax>(new SyntaxNodeOrToken[]
                 {
                     Parameter(Identifier("visualElement"))
-                        .WithType(IdentifierName("global::UnityEngine.UIElements.VisualElement")),
+                        .WithType(IdentifierName(string.Format(UnityUiElementsFullName, "VisualElement"))),
                     Token(SyntaxKind.CommaToken),
                     Parameter(Identifier("bag"))
-                        .WithType(IdentifierName("global::UnityEngine.UIElements.IUxmlAttributes")),
+                        .WithType(IdentifierName(string.Format(UnityUiElementsFullName, "IUxmlAttributes"))),
                     Token(SyntaxKind.CommaToken),
                     Parameter(Identifier("context"))
-                        .WithType(IdentifierName("global::UnityEngine.UIElements.CreationContext"))
+                        .WithType(IdentifierName(string.Format(UnityUiElementsFullName, "CreationContext")))
                 })))
                 .WithBody(Block(initMethodBody));
 
@@ -103,44 +109,118 @@ internal sealed partial class UxmlGenerator
         return ProcessMemberDeclarations(members);
     }
 
-    private static IEnumerable<MemberDeclarationSyntax> GetAttributeFields(UxmlTraitsCapture capture)
+    private static IEnumerable<MemberDeclarationSyntax> GetAttributeFields(GeneratorExecutionContext context,
+        UxmlTraitsCapture capture)
     {
         var fields = new List<MemberDeclarationSyntax>();
 
         foreach (var (property, uxmlAttributeDefaultValue) in capture.Properties)
         {
-            var propertyName = property.GetName();
-
-            var fieldName = propertyName.ToPrivateFieldName();
-
-            var attributeType = "UxmlStringAttributeDescription";
-            var attributeUxmlName = propertyName.ToDashCase();
-            var attributeDefaultValue = uxmlAttributeDefaultValue ?? string.Empty;
-
-            fields.Add(GetAttributeFieldDeclaration(attributeType, fieldName, attributeUxmlName,
-                attributeDefaultValue));
+            fields.Add(GetAttributeFieldDeclaration(GetAttributeInfo(context, property, uxmlAttributeDefaultValue)));
         }
 
         return fields;
     }
 
-    private static FieldDeclarationSyntax GetAttributeFieldDeclaration(string attributeType, string fieldName,
-        string attributeName, string attributeDefaultValue)
+    private static UxmlAttributeInfo GetAttributeInfo(GeneratorExecutionContext context,
+        PropertyDeclarationSyntax property, string? uxmlAttributeDefaultValue)
+    {
+        var propertyName = property.GetName();
+        
+        var info = new UxmlAttributeInfo
+        {
+            TypeIdentifier = GetPropertyTypeIdentifier(context, property, out var typeSyntax),
+            PrivateFieldName = propertyName.ToPrivateFieldName(),
+            AttributeUxmlName = propertyName.ToDashCase()
+        };
+
+        if (uxmlAttributeDefaultValue is null || typeSyntax is null)
+        {
+            info.DefaultValueAssignmentExpression =
+                LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword));
+            return info;
+        }
+
+        if (typeSyntax.IsBoolType())
+        {
+            info.DefaultValueAssignmentExpression = IdentifierName(uxmlAttributeDefaultValue);
+            return info;
+        }
+
+        if (typeSyntax.IsStringType())
+        {
+            info.DefaultValueAssignmentExpression = LiteralExpression(SyntaxKind.StringLiteralExpression,
+                Literal(uxmlAttributeDefaultValue));
+            return info;
+        }
+
+        if (typeSyntax.IsNumericType())
+        {
+            info.DefaultValueAssignmentExpression = LiteralExpression(SyntaxKind.NumericLiteralExpression,
+                Literal(uxmlAttributeDefaultValue, uxmlAttributeDefaultValue));
+            return info;
+        }
+
+        if (info.TypeIdentifier == UxmlColorAttributeDescription)
+        {
+            info.DefaultValueAssignmentExpression = IdentifierName($"global::UnityEngine.{uxmlAttributeDefaultValue}");
+            return info;
+        }
+
+        info.DefaultValueAssignmentExpression = IdentifierName(uxmlAttributeDefaultValue);
+        return info;
+    }
+
+    private static string GetPropertyTypeIdentifier(GeneratorExecutionContext context,
+        BasePropertyDeclarationSyntax property, out TypeSyntax? typeSyntax)
+    {
+        switch (property.Type)
+        {
+            case PredefinedTypeSyntax predefinedType:
+            {
+                var propertyTypeIdentifier = predefinedType.Keyword.Text.FirstCharToUpper();
+
+                typeSyntax = predefinedType;
+
+                return $"Uxml{propertyTypeIdentifier}AttributeDescription";
+            }
+
+            case IdentifierNameSyntax customTypeSyntax:
+            {
+                var type = customTypeSyntax.Identifier.Text;
+                var typeNamespace = customTypeSyntax.GetTypeNamespace(context);
+                var propertyTypeText = $"global::{typeNamespace}.{type}";
+
+                typeSyntax = customTypeSyntax;
+
+                return propertyTypeText == UnityColorTypeFullName
+                    ? UxmlColorAttributeDescription
+                    : $"UxmlEnumAttributeDescription<{propertyTypeText}>";
+            }
+
+            default:
+                typeSyntax = default;
+                return property.Type.GetText().ToString().Trim();
+        }
+    }
+
+    private static FieldDeclarationSyntax GetAttributeFieldDeclaration(UxmlAttributeInfo attributeInfo)
     {
         return
-            FieldDeclaration(VariableDeclaration(IdentifierName($"global::UnityEngine.UIElements.{attributeType}"))
-                    .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(fieldName))
+            FieldDeclaration(VariableDeclaration(
+                        IdentifierName(string.Format(UnityUiElementsFullName, attributeInfo.TypeIdentifier)))
+                    .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(attributeInfo.PrivateFieldName))
                         .WithInitializer(EqualsValueClause(ImplicitObjectCreationExpression()
                             .WithInitializer(InitializerExpression(SyntaxKind.ObjectInitializerExpression,
                                 SeparatedList<ExpressionSyntax>(new SyntaxNodeOrToken[]
                                 {
                                     AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                        IdentifierName("name"),
-                                        LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(attributeName))),
+                                        IdentifierName("name"), 
+                                        LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(attributeInfo.AttributeUxmlName))),
                                     Token(SyntaxKind.CommaToken),
                                     AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                        IdentifierName("defaultValue"),
-                                        LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(attributeDefaultValue)))
+                                        IdentifierName("defaultValue"), 
+                                        attributeInfo.DefaultValueAssignmentExpression)
                                 }))))))))
                 .WithModifiers(TokenList(Token(SyntaxKind.PrivateKeyword), Token(SyntaxKind.ReadOnlyKeyword)));
     }
