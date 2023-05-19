@@ -5,14 +5,44 @@ namespace UnityUxmlGenerator.Extensions;
 
 internal static class TypeSyntaxExtensions
 {
+    public static bool IsBoolType(this TypeSyntax typeSyntax)
+    {
+        if (typeSyntax is PredefinedTypeSyntax predefinedTypeSyntax)
+        {
+            return IsBoolType(predefinedTypeSyntax);
+        }
+
+        return IsBoolKind(typeSyntax.RawKind);
+    }
+
     public static bool IsBoolType(this PredefinedTypeSyntax typeSyntax)
     {
         return IsBoolKind(typeSyntax.Keyword.RawKind);
     }
 
+    public static bool IsStringType(this TypeSyntax typeSyntax)
+    {
+        if (typeSyntax is PredefinedTypeSyntax predefinedTypeSyntax)
+        {
+            return IsStringType(predefinedTypeSyntax);
+        }
+
+        return IsStringKind(typeSyntax.RawKind);
+    }
+
     public static bool IsStringType(this PredefinedTypeSyntax typeSyntax)
     {
         return IsStringKind(typeSyntax.Keyword.RawKind);
+    }
+
+    public static bool IsNumericType(this TypeSyntax typeSyntax)
+    {
+        if (typeSyntax is PredefinedTypeSyntax predefinedTypeSyntax)
+        {
+            return IsNumericType(predefinedTypeSyntax);
+        }
+
+        return IsNumericKind(typeSyntax.RawKind);
     }
 
     public static bool IsNumericType(this PredefinedTypeSyntax typeSyntax)
