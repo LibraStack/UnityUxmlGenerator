@@ -1,19 +1,12 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using UnityUxmlGenerator.Extensions;
 
 namespace UnityUxmlGenerator.Captures;
 
-internal sealed class UxmlFactoryCapture
+internal sealed class UxmlFactoryCapture : BaseCapture
 {
-    public UxmlFactoryCapture(ClassDeclarationSyntax @class)
+    public UxmlFactoryCapture(ClassDeclarationSyntax @class) : base(@class)
     {
-        Class = @class;
-        ClassName = @class.Identifier.Text;
-        ClassNamespace = @class.GetParent<NamespaceDeclarationSyntax>()!.Name.ToString();
     }
 
-    public string ClassName { get; }
-    public string ClassNamespace { get; }
-
-    public ClassDeclarationSyntax Class { get; }
+    public override string ClassTag => "UxmlFactory";
 }

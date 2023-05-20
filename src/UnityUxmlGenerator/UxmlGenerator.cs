@@ -1,5 +1,6 @@
 ﻿using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Text;
 using UnityUxmlGenerator.Captures;
 using UnityUxmlGenerator.Diagnostics;
 using UnityUxmlGenerator.Extensions;
@@ -19,8 +20,8 @@ internal sealed partial class UxmlGenerator : ISourceGenerator
 
     public void Execute(GeneratorExecutionContext context)
     {
-        context.AddSource($"{nameof(UxmlElementAttribute)}.g.cs", UxmlElementAttribute);
-        context.AddSource($"{nameof(UxmlAttributeAttribute)}.g.cs", UxmlAttributeAttribute);
+        context.AddSource($"{nameof(UxmlElementClassName)}.g.cs", GenerateUxmlElementAttribute());
+        context.AddSource($"{nameof(UxmlAttributeClassName)}.g.cs", GenerateUxmlAttributeAttribute());
 
         if (context.SyntaxReceiver is not VisualElementReceiver receiver)
         {
@@ -29,31 +30,33 @@ internal sealed partial class UxmlGenerator : ISourceGenerator
 
         foreach (var uxmlElement in receiver.UxmlFactoryReceiver.Captures)
         {
-            if (uxmlElement.Class.InheritsFromFullyQualifiedName(context, VisualElementFullName))
-            {
-                context.AddSource($"{uxmlElement.ClassName}.UxmlFactory.g.cs", GenerateUxmlFactory(uxmlElement));
-            }
-            else
-            {
-                ReportClassDoesNotInheritFromVisualElementError(context, uxmlElement.Class);
-            }
+            AddSource(context, uxmlElement, GenerateUxmlFactory(uxmlElement));
         }
 
         foreach (var capture in receiver.UxmlTraitsReceiver.Captures)
         {
-            var traitsCapture = capture.Value;
-
-            if (traitsCapture.Class.InheritsFromFullyQualifiedName(context, VisualElementFullName))
-            {
-                context.AddSource($"{traitsCapture.ClassName}.UxmlTraits.g.cs", GenerateUxmlTraits(context, traitsCapture));
-            }
-            else
-            {
-                ReportClassDoesNotInheritFromVisualElementError(context, traitsCapture.Class);
-            }
+            AddSource(context, capture.Value, GenerateUxmlTraits(context, capture.Value));
         }
 
-        foreach (var diagnostic in receiver.UxmlTraitsReceiver.Diagnostics)
+        ReportDiagnostics(context, receiver.UxmlTraitsReceiver.Diagnostics);
+        ReportDiagnostics(context, receiver.UxmlFactoryReceiver.Diagnostics);
+    }
+
+    private static void AddSource(GeneratorExecutionContext context, BaseCapture capture, SourceText sourceText)
+    {
+        if (capture.Class.InheritsFromFullyQualifiedName(context, VisualElementFullName))
+        {
+            context.AddSource($"{capture.ClassName}.{capture.ClassTag}.g.cs", sourceText);
+        }
+        else
+        {
+            ReportClassDoesNotInheritFromVisualElementError(context, capture.Class);
+        }
+    }
+
+    private static void ReportDiagnostics(GeneratorExecutionContext context, IEnumerable<Diagnostic> diagnostics)
+    {
+        foreach (var diagnostic in diagnostics)
         {
             context.ReportDiagnostic(diagnostic);
         }
