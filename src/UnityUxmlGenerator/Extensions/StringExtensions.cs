@@ -4,6 +4,11 @@ namespace UnityUxmlGenerator.Extensions;
 
 internal static class StringExtensions
 {
+    public static string FirstCharToUpper(this string str)
+    {
+        return $"{char.ToUpper(str[0])}{str.Substring(1)}";
+    }
+
     public static string ToPrivateFieldName(this string propertyName)
     {
         return string.Concat("_", char.ToLower(propertyName[0]), propertyName.Substring(1));

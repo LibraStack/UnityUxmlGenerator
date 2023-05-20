@@ -1,27 +1,19 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using UnityUxmlGenerator.Extensions;
 
 namespace UnityUxmlGenerator.Captures;
 
-internal sealed class UxmlTraitsCapture
+internal sealed class UxmlTraitsCapture : BaseCapture
 {
-    public UxmlTraitsCapture(ClassDeclarationSyntax @class, TypeSyntax baseClassType)
+    public UxmlTraitsCapture(ClassDeclarationSyntax @class, TypeSyntax baseClassType) : base(@class)
     {
-        Class = @class;
-        ClassName = @class.Identifier.Text;
-        ClassNamespace = @class.GetParent<NamespaceDeclarationSyntax>()!.Name.ToString();
-
         BaseClassType = baseClassType;
-        Properties = new List<(string PropertyName, string? DefaultValue)>();
+        Properties = new List<(PropertyDeclarationSyntax property, string? DefaultValue)>();
     }
 
-    public string ClassName { get; }
-    public string ClassNamespace { get; }
+    public override string ClassTag => "UxmlTraits";
 
     public TypeSyntax BaseClassType { get; }
-    public ClassDeclarationSyntax Class { get; }
-
-    public List<(string PropertyName, string? DefaultValue)> Properties { get; }
+    public List<(PropertyDeclarationSyntax property, string? DefaultValue)> Properties { get; }
 
     public string GetBaseClassName(out TypeSyntax? genericTypeSyntax)
     {
