@@ -6,7 +6,7 @@ using UnityUxmlGenerator.Extensions;
 
 namespace UnityUxmlGenerator.SyntaxReceivers;
 
-internal sealed class UxmlTraitsReceiver : ISyntaxReceiver
+internal sealed class UxmlTraitsReceiver : BaseReceiver
 {
     private const string AttributeName = "UxmlAttribute";
 
@@ -14,7 +14,7 @@ internal sealed class UxmlTraitsReceiver : ISyntaxReceiver
 
     public IReadOnlyDictionary<string, UxmlTraitsCapture> Captures => _captures;
 
-    public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+    public override void OnVisitSyntaxNode(SyntaxNode syntaxNode)
     {
         if (syntaxNode is not AttributeSyntax
             {
@@ -34,19 +34,30 @@ internal sealed class UxmlTraitsReceiver : ISyntaxReceiver
         {
             if (HasSameType(property, attribute) == false)
             {
+                RegisterDiagnostic(PropertyAndDefaultValueTypesMismatchError, property.GetLocation(),
+                    property.GetName());
                 return;
             }
         }
 
         var @class = property.GetParent<ClassDeclarationSyntax>();
-        if (@class?.BaseList is null || @class.BaseList.Types.Count == 0)
+        if (@class.InheritsFromAnyType() == false)
         {
+            if (@class is null)
+            {
+                RegisterDiagnostic(ClassHasNoBaseClassError, property.GetLocation());
+            }
+            else
+            {
+                RegisterDiagnostic(ClassHasNoBaseClassError, @class.GetLocation(), @class.Identifier.Text);
+            }
+
             return;
         }
 
-        if (_captures.TryGetValue(@class.Identifier.Text, out var uxmlTraits) == false)
+        if (_captures.TryGetValue(@class!.Identifier.Text, out var uxmlTraits) == false)
         {
-            uxmlTraits = new UxmlTraitsCapture(@class, @class.BaseList.Types.First().Type);
+            uxmlTraits = new UxmlTraitsCapture(@class, @class.BaseList!.Types.First().Type);
             _captures.Add(@class.Identifier.Text, uxmlTraits);
         }
 
@@ -56,6 +67,11 @@ internal sealed class UxmlTraitsReceiver : ISyntaxReceiver
     private static bool HasSameType(BasePropertyDeclarationSyntax property, AttributeSyntax attribute)
     {
         var parameter = attribute.ArgumentList!.Arguments.First().Expression;
+
+        if (parameter.IsKind(SyntaxKind.DefaultLiteralExpression))
+        {
+            return true;
+        }
 
         if (property.Type is PredefinedTypeSyntax predefinedType)
         {
@@ -94,14 +110,27 @@ internal sealed class UxmlTraitsReceiver : ISyntaxReceiver
 
     private static string? GetAttributeArgumentValue(AttributeSyntax attribute)
     {
-        return attribute.ArgumentList?.Arguments.Single().Expression switch
+        if (attribute.ArgumentList is null || attribute.ArgumentList.Arguments.Any() == false)
         {
-            LiteralExpressionSyntax literal => literal.Token.IsKind(SyntaxKind.StringLiteralToken)
-                ? literal.Token.ValueText
-                : literal.Token.Text,
+            return null;
+        }
+
+        return attribute.ArgumentList.Arguments.Single().Expression switch
+        {
+            LiteralExpressionSyntax literal => GetLiteralExpressionValue(literal),
             InvocationExpressionSyntax invocation => invocation.ArgumentList.Arguments.Single().Expression.GetText().ToString(),
             MemberAccessExpressionSyntax member => member.Parent?.ToString(),
             _ => null
         };
+    }
+
+    private static string? GetLiteralExpressionValue(LiteralExpressionSyntax literal)
+    {
+        if (literal.Token.IsKind(SyntaxKind.DefaultKeyword))
+        {
+            return null;
+        }
+
+        return literal.Token.IsKind(SyntaxKind.StringLiteralToken) ? literal.Token.ValueText : literal.Token.Text;
     }
 }

@@ -6,6 +6,11 @@ namespace UnityUxmlGenerator.Extensions;
 
 internal static class BaseTypeDeclarationSyntaxExtensions
 {
+    public static bool InheritsFromAnyType(this BaseTypeDeclarationSyntax? @class)
+    {
+        return @class?.BaseList is not null && @class.BaseList.Types.Count != 0;
+    }
+
     public static bool InheritsFromFullyQualifiedName(this BaseTypeDeclarationSyntax @class,
         GeneratorExecutionContext context, string name)
     {

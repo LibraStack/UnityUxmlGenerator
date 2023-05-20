@@ -1,4 +1,7 @@
 ﻿using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using UnityUxmlGenerator.Captures;
+using UnityUxmlGenerator.Diagnostics;
 using UnityUxmlGenerator.Extensions;
 using UnityUxmlGenerator.SyntaxReceivers;
 
@@ -30,6 +33,10 @@ internal sealed partial class UxmlGenerator : ISourceGenerator
             {
                 context.AddSource($"{uxmlElement.ClassName}.UxmlFactory.g.cs", GenerateUxmlFactory(uxmlElement));
             }
+            else
+            {
+                ReportClassDoesNotInheritFromVisualElementError(context, uxmlElement.Class);
+            }
         }
 
         foreach (var capture in receiver.UxmlTraitsReceiver.Captures)
@@ -40,6 +47,22 @@ internal sealed partial class UxmlGenerator : ISourceGenerator
             {
                 context.AddSource($"{traitsCapture.ClassName}.UxmlTraits.g.cs", GenerateUxmlTraits(context, traitsCapture));
             }
+            else
+            {
+                ReportClassDoesNotInheritFromVisualElementError(context, traitsCapture.Class);
+            }
         }
+
+        foreach (var diagnostic in receiver.UxmlTraitsReceiver.Diagnostics)
+        {
+            context.ReportDiagnostic(diagnostic);
+        }
+    }
+
+    private static void ReportClassDoesNotInheritFromVisualElementError(GeneratorExecutionContext context,
+        BaseTypeDeclarationSyntax @class)
+    {
+        context.ReportDiagnostic(
+            ClassDoesNotInheritFromVisualElementError.CreateDiagnostic(@class.GetLocation(), @class.Identifier.Text));
     }
 }

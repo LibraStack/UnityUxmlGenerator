@@ -5,7 +5,7 @@ using UnityUxmlGenerator.Extensions;
 
 namespace UnityUxmlGenerator.SyntaxReceivers;
 
-internal sealed class UxmlFactoryReceiver : ISyntaxReceiver
+internal sealed class UxmlFactoryReceiver : BaseReceiver
 {
     private const string AttributeName = "UxmlElement";
 
@@ -13,7 +13,7 @@ internal sealed class UxmlFactoryReceiver : ISyntaxReceiver
 
     public IEnumerable<UxmlFactoryCapture> Captures => _captures;
 
-    public void OnVisitSyntaxNode(SyntaxNode syntaxNode)
+    public override void OnVisitSyntaxNode(SyntaxNode syntaxNode)
     {
         if (syntaxNode is not AttributeSyntax
             {
@@ -25,11 +25,13 @@ internal sealed class UxmlFactoryReceiver : ISyntaxReceiver
 
         var @class = attribute.GetParent<ClassDeclarationSyntax>();
 
-        if (@class?.BaseList is null || @class.BaseList.Types.Count == 0)
+        if (@class.InheritsFromAnyType())
         {
-            return;
+            _captures.Add(new UxmlFactoryCapture(@class!));
         }
-
-        _captures.Add(new UxmlFactoryCapture(@class));
+        else if (@class is not null)
+        {
+            RegisterDiagnostic(ClassHasNoBaseClassError, @class.GetLocation(), @class.Identifier.Text);
+        }
     }
 }
