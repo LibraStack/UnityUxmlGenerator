@@ -1,4 +1,5 @@
-﻿using Microsoft.CodeAnalysis;
+﻿using System.Reflection;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using UnityUxmlGenerator.Captures;
@@ -12,6 +13,8 @@ namespace UnityUxmlGenerator;
 internal sealed partial class UxmlGenerator : ISourceGenerator
 {
     private const string VisualElementFullName = "UnityEngine.UIElements.VisualElement";
+
+    private static readonly AssemblyName AssemblyName = typeof(UxmlGenerator).Assembly.GetName();
 
     public void Initialize(GeneratorInitializationContext context)
     {

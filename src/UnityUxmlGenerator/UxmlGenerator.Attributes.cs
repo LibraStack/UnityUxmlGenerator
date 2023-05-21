@@ -1,5 +1,4 @@
-﻿using System.Reflection;
-using System.Text;
+﻿using System.Text;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
@@ -8,56 +7,60 @@ namespace UnityUxmlGenerator;
 
 internal sealed partial class UxmlGenerator
 {
+    private const string AttributeBaseType = "global::System.Attribute";
+
     private const string UxmlElementClassName = "UxmlElementAttribute";
     private const string UxmlAttributeClassName = "UxmlAttributeAttribute";
 
-    private static readonly AssemblyName AssemblyName = typeof(UxmlGenerator).Assembly.GetName();
-
     private static SourceText GenerateUxmlElementAttribute()
     {
-        var baseList = SimpleBaseType(IdentifierName("global::System.Attribute"));
-
-        var @class = ClassDeclaration(UxmlElementClassName)
-            .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)))
-            .WithBaseList(BaseList(SingletonSeparatedList<BaseTypeSyntax>(baseList)));
-
-        return GetCompilationUnit((TypeDeclarationSyntax) ProcessMemberDeclaration(@class), AssemblyName.Name)
-            .GetText(Encoding.UTF8);
+        return GenerateAttributeClass(UxmlElementClassName);
     }
 
     private static SourceText GenerateUxmlAttributeAttribute()
     {
-        var baseList = SimpleBaseType(IdentifierName("global::System.Attribute"));
+        return GenerateAttributeClass(UxmlAttributeClassName, GetUxmlAttributeMembers());
+    }
 
-        var @class = ClassDeclaration(UxmlAttributeClassName)
-            .WithModifiers(TokenList(Token(SyntaxKind.InternalKeyword), Token(SyntaxKind.SealedKeyword)))
-            .WithBaseList(BaseList(SingletonSeparatedList<BaseTypeSyntax>(baseList)));
-
-        var members = GetUxmlAttributeMembers();
-
-        return GetCompilationUnit((TypeDeclarationSyntax) ProcessMemberDeclaration(@class), AssemblyName.Name, members)
+    private static SourceText GenerateAttributeClass(string attributeClassIdentifier,
+        MemberDeclarationSyntax[]? members = null)
+    {
+        return CompilationUnitWidget(
+                members: NamespaceWidget(
+                    identifier: AssemblyName.Name,
+                    member: ClassWidget(
+                        identifier: attributeClassIdentifier,
+                        modifiers: new[] { SyntaxKind.InternalKeyword, SyntaxKind.SealedKeyword },
+                        baseType: SimpleBaseType(IdentifierName(AttributeBaseType)),
+                        members: members,
+                        addGeneratedCodeAttributes: true)),
+                normalizeWhitespace: true)
             .GetText(Encoding.UTF8);
     }
 
     private static MemberDeclarationSyntax[] GetUxmlAttributeMembers()
     {
-        var classConstructor =
-            ConstructorDeclaration(Identifier(UxmlAttributeClassName))
-                .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
-                .WithParameterList(ParameterList(SingletonSeparatedList(Parameter(Identifier("defaultValue"))
-                    .WithType(NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))))
-                    .WithDefault(EqualsValueClause(LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)))))))
-                .WithBody(Block(SingletonList<StatementSyntax>(ExpressionStatement(AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    IdentifierName("DefaultValue"),
-                    IdentifierName("defaultValue"))))));
-
-        var defaultProperty =
-            PropertyDeclaration(NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))), Identifier("DefaultValue"))
-                .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword)))
-                .WithAccessorList(AccessorList(SingletonList(
-                    AccessorDeclaration(SyntaxKind.GetAccessorDeclaration)
-                        .WithSemicolonToken(Token(SyntaxKind.SemicolonToken)))));
-
-        return new MemberDeclarationSyntax[] { classConstructor, defaultProperty };
+        return new MemberDeclarationSyntax[]
+        {
+            ConstructorWidget(
+                identifier: UxmlAttributeClassName,
+                modifier: SyntaxKind.PublicKeyword,
+                parameter: ParameterWidget(
+                    identifier: "defaultValue",
+                    type: NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))),
+                    addDefaultKeyword: true),
+                body: ExpressionStatement(AssignmentWidget(
+                    left: IdentifierName("DefaultValue"),
+                    right: IdentifierName("defaultValue"))),
+                addGeneratedCodeAttributes: true
+            ),
+            PropertyWidget(
+                identifier: "DefaultValue",
+                type: NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))),
+                modifier: SyntaxKind.PublicKeyword,
+                accessor: SyntaxKind.GetAccessorDeclaration,
+                addGeneratedCodeAttributes: true
+            )
+        };
     }
 }

@@ -1,6 +1,5 @@
 ﻿using System.Text;
 using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Text;
 using UnityUxmlGenerator.Captures;
 
@@ -8,24 +7,23 @@ namespace UnityUxmlGenerator;
 
 internal sealed partial class UxmlGenerator
 {
+    private const string FactoryBaseTypeIdentifier = "global::UnityEngine.UIElements.UxmlFactory<{0}, UxmlTraits>";
+
     private static SourceText GenerateUxmlFactory(UxmlFactoryCapture capture)
     {
-        var @class = ClassDeclaration(capture.ClassName).AddModifiers(Token(SyntaxKind.PartialKeyword));
-
-        var factoryClass = GetFactoryClass(capture);
-
-        return GetCompilationUnit(@class, capture.ClassNamespace, factoryClass).GetText(Encoding.UTF8);
-    }
-
-    private static MemberDeclarationSyntax GetFactoryClass(UxmlFactoryCapture capture)
-    {
-        var uxmlFactoryBaseList =
-            SimpleBaseType(
-                IdentifierName($"global::UnityEngine.UIElements.UxmlFactory<{capture.ClassName}, UxmlTraits>"));
-
-        return
-            ClassDeclaration("UxmlFactory")
-                .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.NewKeyword)))
-                .WithBaseList(BaseList(SingletonSeparatedList<BaseTypeSyntax>(uxmlFactoryBaseList)));
+        return CompilationUnitWidget(
+                members: NamespaceWidget(
+                    identifier: capture.ClassNamespace,
+                    member: ClassWidget(
+                        identifier: capture.ClassName,
+                        modifier: SyntaxKind.PartialKeyword,
+                        member: ClassWidget(
+                            identifier: "UxmlFactory",
+                            modifiers: new[] { SyntaxKind.PublicKeyword, SyntaxKind.NewKeyword },
+                            baseType: SimpleBaseType(IdentifierName(string.Format(FactoryBaseTypeIdentifier, capture.ClassName))),
+                            addGeneratedCodeAttributes: true
+                        ))),
+                normalizeWhitespace: true)
+            .GetText(Encoding.UTF8);
     }
 }

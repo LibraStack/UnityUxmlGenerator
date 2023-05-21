@@ -17,22 +17,21 @@ internal sealed partial class UxmlGenerator
 
     private static SourceText GenerateUxmlTraits(GeneratorExecutionContext context, UxmlTraitsCapture capture)
     {
-        var @class = ClassDeclaration(capture.ClassName).AddModifiers(Token(SyntaxKind.PartialKeyword));
-
-        var traitsClass = GetTraitsClass(context, capture);
-
-        return GetCompilationUnit(@class, capture.ClassNamespace, traitsClass).GetText(Encoding.UTF8);
-    }
-
-    private static MemberDeclarationSyntax GetTraitsClass(GeneratorExecutionContext context, UxmlTraitsCapture capture)
-    {
-        var uxmlTraitsBaseList = SimpleBaseType(IdentifierName($"{GetBaseClassName(context, capture)}.UxmlTraits"));
-
-        return
-            ClassDeclaration("UxmlTraits")
-                .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.NewKeyword)))
-                .WithBaseList(BaseList(SingletonSeparatedList<BaseTypeSyntax>(uxmlTraitsBaseList)))
-                .WithMembers(List(GetTraitsClassMembers(context, capture)));
+        return CompilationUnitWidget(
+                members: NamespaceWidget(
+                    identifier: capture.ClassNamespace,
+                    member: ClassWidget(
+                        identifier: capture.ClassName,
+                        modifier: SyntaxKind.PartialKeyword,
+                        member: ClassWidget(
+                            identifier: "UxmlTraits",
+                            modifiers: new[] { SyntaxKind.PublicKeyword, SyntaxKind.NewKeyword },
+                            baseType: SimpleBaseType(IdentifierName($"{GetBaseClassName(context, capture)}.UxmlTraits")),
+                            members: GetTraitsClassMembers(context, capture),
+                            addGeneratedCodeAttributes: true
+                        ))),
+                normalizeWhitespace: true)
+            .GetText(Encoding.UTF8);
     }
 
     private static string GetBaseClassName(GeneratorExecutionContext context, UxmlTraitsCapture capture)
@@ -61,52 +60,53 @@ internal sealed partial class UxmlGenerator
         return string.Empty;
     }
 
-    private static IEnumerable<MemberDeclarationSyntax> GetTraitsClassMembers(GeneratorExecutionContext context, 
+    private static MemberDeclarationSyntax[] GetTraitsClassMembers(GeneratorExecutionContext context,
         UxmlTraitsCapture capture)
     {
         var members = new List<MemberDeclarationSyntax>(GetAttributeFields(context, capture));
 
         var initMethodBody = new List<StatementSyntax>
         {
-            ExpressionStatement(
-                InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, BaseExpression(),
-                        IdentifierName("Init")))
-                    .WithArgumentList(ArgumentList(SeparatedList<ArgumentSyntax>(new SyntaxNodeOrToken[]
-                    {
-                        Argument(IdentifierName("visualElement")),
-                        Token(SyntaxKind.CommaToken),
-                        Argument(IdentifierName("bag")),
-                        Token(SyntaxKind.CommaToken),
-                        Argument(IdentifierName("context"))
-                    })))),
-            LocalDeclarationStatement(
-                VariableDeclaration(IdentifierName(Identifier(TriviaList(), SyntaxKind.VarKeyword, "var", "var", TriviaList())))
-                    .WithVariables(SingletonSeparatedList(
-                        VariableDeclarator(Identifier("control"))
-                            .WithInitializer(EqualsValueClause(CastExpression(IdentifierName(capture.ClassName), IdentifierName("visualElement")))))))
+            MethodBaseCallWidget(
+                identifier: "Init",
+                arguments: new[]
+                {
+                    Argument(IdentifierName("visualElement")),
+                    Argument(IdentifierName("bag")),
+                    Argument(IdentifierName("context"))
+                }),
+            LocalVariableWidget(
+                identifier: "control",
+                initializer: CastExpressionWidget(
+                    identifier: "visualElement",
+                    typeToCast: IdentifierName(capture.ClassName)))
         };
 
         initMethodBody.AddRange(GetAttributeValueAssignments(capture));
 
-        var initMethod =
-            MethodDeclaration(PredefinedType(Token(SyntaxKind.VoidKeyword)), Identifier("Init"))
-                .WithModifiers(TokenList(Token(SyntaxKind.PublicKeyword), Token(SyntaxKind.OverrideKeyword)))
-                .WithParameterList(ParameterList(SeparatedList<ParameterSyntax>(new SyntaxNodeOrToken[]
-                {
-                    Parameter(Identifier("visualElement"))
-                        .WithType(IdentifierName(string.Format(UnityUiElementsFullName, "VisualElement"))),
-                    Token(SyntaxKind.CommaToken),
-                    Parameter(Identifier("bag"))
-                        .WithType(IdentifierName(string.Format(UnityUiElementsFullName, "IUxmlAttributes"))),
-                    Token(SyntaxKind.CommaToken),
-                    Parameter(Identifier("context"))
-                        .WithType(IdentifierName(string.Format(UnityUiElementsFullName, "CreationContext")))
-                })))
-                .WithBody(Block(initMethodBody));
+        var initMethod = MethodWidget(
+            identifier: "Init",
+            type: PredefinedType(Token(SyntaxKind.VoidKeyword)),
+            modifiers: new[] { SyntaxKind.PublicKeyword, SyntaxKind.OverrideKeyword },
+            parameters: new[]
+            {
+                ParameterWidget(
+                    identifier: "visualElement",
+                    type: IdentifierName(string.Format(UnityUiElementsFullName, "VisualElement"))),
+                ParameterWidget(
+                    identifier: "bag",
+                    type: IdentifierName(string.Format(UnityUiElementsFullName, "IUxmlAttributes"))),
+                ParameterWidget(
+                    identifier: "context",
+                    type: IdentifierName(string.Format(UnityUiElementsFullName, "CreationContext"))),
+            },
+            body: initMethodBody.ToArray(),
+            addGeneratedCodeAttributes: true
+        );
 
         members.Add(initMethod);
 
-        return ProcessMemberDeclarations(members);
+        return members.ToArray();
     }
 
     private static IEnumerable<MemberDeclarationSyntax> GetAttributeFields(GeneratorExecutionContext context,
@@ -126,7 +126,7 @@ internal sealed partial class UxmlGenerator
         PropertyDeclarationSyntax property, string? uxmlAttributeDefaultValue)
     {
         var propertyName = property.GetName();
-        
+
         var info = new UxmlAttributeInfo
         {
             TypeIdentifier = GetPropertyTypeIdentifier(context, property, out var typeSyntax),
@@ -206,23 +206,21 @@ internal sealed partial class UxmlGenerator
 
     private static FieldDeclarationSyntax GetAttributeFieldDeclaration(UxmlAttributeInfo attributeInfo)
     {
-        return
-            FieldDeclaration(VariableDeclaration(
-                        IdentifierName(string.Format(UnityUiElementsFullName, attributeInfo.TypeIdentifier)))
-                    .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(attributeInfo.PrivateFieldName))
-                        .WithInitializer(EqualsValueClause(ImplicitObjectCreationExpression()
-                            .WithInitializer(InitializerExpression(SyntaxKind.ObjectInitializerExpression,
-                                SeparatedList<ExpressionSyntax>(new SyntaxNodeOrToken[]
-                                {
-                                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                        IdentifierName("name"), 
-                                        LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(attributeInfo.AttributeUxmlName))),
-                                    Token(SyntaxKind.CommaToken),
-                                    AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                                        IdentifierName("defaultValue"), 
-                                        attributeInfo.DefaultValueAssignmentExpression)
-                                }))))))))
-                .WithModifiers(TokenList(Token(SyntaxKind.PrivateKeyword), Token(SyntaxKind.ReadOnlyKeyword)));
+        return FieldWidget(
+            identifier: attributeInfo.PrivateFieldName,
+            type: IdentifierName(string.Format(UnityUiElementsFullName, attributeInfo.TypeIdentifier)),
+            modifiers: new[] { SyntaxKind.PrivateKeyword, SyntaxKind.ReadOnlyKeyword },
+            initializers: new[]
+            {
+                AssignmentWidget(
+                    left: IdentifierName("name"),
+                    right: LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(attributeInfo.AttributeUxmlName))),
+                AssignmentWidget(
+                    left: IdentifierName("defaultValue"),
+                    right: attributeInfo.DefaultValueAssignmentExpression)
+            },
+            addGeneratedCodeAttributes: true
+        );
     }
 
     private static IEnumerable<StatementSyntax> GetAttributeValueAssignments(UxmlTraitsCapture capture)
@@ -234,27 +232,23 @@ internal sealed partial class UxmlGenerator
             var propertyName = property.GetName();
             var fieldName = propertyName.ToPrivateFieldName();
 
-            attributeValueAssignments.Add(GetAttributeValueAssignment(propertyName, fieldName));
+            attributeValueAssignments.Add(ExpressionStatement(GetAttributeValueAssignment(propertyName, fieldName)));
         }
 
         return attributeValueAssignments;
     }
 
-    private static StatementSyntax GetAttributeValueAssignment(string propertyName, string fieldName)
+    private static ExpressionSyntax GetAttributeValueAssignment(string propertyName, string fieldName)
     {
-        return
-            ExpressionStatement(
-                AssignmentExpression(SyntaxKind.SimpleAssignmentExpression,
-                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression, IdentifierName("control"),
-                        IdentifierName(propertyName)),
-                    InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                            IdentifierName(fieldName), IdentifierName("GetValueFromBag")))
-                        .WithArgumentList(ArgumentList(SeparatedList<ArgumentSyntax>(
-                            new SyntaxNodeOrToken[]
-                            {
-                                Argument(IdentifierName("bag")),
-                                Token(SyntaxKind.CommaToken),
-                                Argument(IdentifierName("context"))
-                            })))));
+        return AssignmentWidget(
+            left: MemberAccessWidget(identifier: "control", memberName: propertyName),
+            right: MethodAccessWidget(
+                identifier: fieldName,
+                methodName: "GetValueFromBag",
+                arguments: new[]
+                {
+                    Argument(IdentifierName("bag")),
+                    Argument(IdentifierName("context"))
+                }));
     }
 }
