@@ -26,18 +26,23 @@ internal sealed partial class UxmlGenerator : ISourceGenerator
         context.AddSource($"{nameof(UxmlElementClassName)}.g.cs", GenerateUxmlElementAttribute());
         context.AddSource($"{nameof(UxmlAttributeClassName)}.g.cs", GenerateUxmlAttributeAttribute());
 
-        if (context.SyntaxReceiver is not VisualElementReceiver receiver)
+        if (context.SyntaxReceiver is not VisualElementReceiver receiver ||
+            context.CancellationToken.IsCancellationRequested)
         {
             return;
         }
 
         foreach (var uxmlElement in receiver.UxmlFactoryReceiver.Captures)
         {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
             AddSource(context, uxmlElement, GenerateUxmlFactory(uxmlElement));
         }
 
         foreach (var capture in receiver.UxmlTraitsReceiver.Captures)
         {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
             AddSource(context, capture.Value, GenerateUxmlTraits(context, capture.Value));
         }
 

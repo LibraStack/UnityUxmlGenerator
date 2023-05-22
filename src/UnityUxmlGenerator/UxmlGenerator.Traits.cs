@@ -81,7 +81,7 @@ internal sealed partial class UxmlGenerator
                     typeToCast: IdentifierName(capture.ClassName)))
         };
 
-        initMethodBody.AddRange(GetAttributeValueAssignments(capture));
+        initMethodBody.AddRange(GetAttributeValueAssignments(context, capture));
 
         var initMethod = MethodWidget(
             identifier: "Init",
@@ -115,6 +115,8 @@ internal sealed partial class UxmlGenerator
 
         foreach (var (property, uxmlAttributeDefaultValue) in capture.Properties)
         {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
             fields.Add(GetAttributeFieldDeclaration(GetAttributeInfo(context, property, uxmlAttributeDefaultValue)));
         }
 
@@ -222,12 +224,15 @@ internal sealed partial class UxmlGenerator
         );
     }
 
-    private static IEnumerable<StatementSyntax> GetAttributeValueAssignments(UxmlTraitsCapture capture)
+    private static IEnumerable<StatementSyntax> GetAttributeValueAssignments(GeneratorExecutionContext context,
+        UxmlTraitsCapture capture)
     {
         var attributeValueAssignments = new List<StatementSyntax>();
 
         foreach (var (property, _) in capture.Properties)
         {
+            context.CancellationToken.ThrowIfCancellationRequested();
+
             var propertyName = property.GetName();
             var fieldName = propertyName.ToPrivateFieldName();
 
