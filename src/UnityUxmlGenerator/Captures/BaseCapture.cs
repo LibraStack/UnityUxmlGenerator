@@ -9,11 +9,11 @@ internal abstract class BaseCapture
     {
         Class = @class;
         ClassName = @class.Identifier.Text;
-        ClassNamespace = @class.GetParent<NamespaceDeclarationSyntax>()!.Name.ToString();
+        ClassNamespace = @class.GetParent<NamespaceDeclarationSyntax>()?.Name.ToString();
     }
 
     public string ClassName { get; }
-    public string ClassNamespace { get; }
+    public string? ClassNamespace { get; }
     public abstract string ClassTag { get; }
 
     public ClassDeclarationSyntax Class { get; }

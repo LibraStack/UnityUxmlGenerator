@@ -58,7 +58,7 @@ internal sealed class UxmlTraitsReceiver : BaseReceiver
         if (_captures.TryGetValue(@class!.Identifier.Text, out var uxmlTraits) == false)
         {
             uxmlTraits = new UxmlTraitsCapture(@class, @class.BaseList!.Types.First().Type);
-            _captures.Add(@class.Identifier.Text, uxmlTraits);
+            _captures.Add(uxmlTraits.ClassName, uxmlTraits);
         }
 
         uxmlTraits.Properties.Add((property, GetAttributeArgumentValue(attribute)));
