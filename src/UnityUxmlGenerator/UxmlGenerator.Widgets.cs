@@ -238,6 +238,14 @@ internal sealed partial class UxmlGenerator
         return EqualsValueClause(CastExpression(typeToCast, IdentifierName(identifier)));
     }
 
+    private static StatementSyntax AssignmentStatementWidget(
+        ExpressionSyntax left,
+        ExpressionSyntax right,
+        SyntaxKind expression = SyntaxKind.SimpleAssignmentExpression)
+    {
+        return ExpressionStatement(AssignmentWidget(left, right, expression));
+    }
+
     private static ExpressionSyntax AssignmentWidget(
         ExpressionSyntax left,
         ExpressionSyntax right,

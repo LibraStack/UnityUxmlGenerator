@@ -236,15 +236,15 @@ internal sealed partial class UxmlGenerator
             var propertyName = property.GetName();
             var fieldName = propertyName.ToPrivateFieldName();
 
-            attributeValueAssignments.Add(ExpressionStatement(GetAttributeValueAssignment(propertyName, fieldName)));
+            attributeValueAssignments.Add(GetAttributeValueAssignmentStatement(propertyName, fieldName));
         }
 
         return attributeValueAssignments;
     }
 
-    private static ExpressionSyntax GetAttributeValueAssignment(string propertyName, string fieldName)
+    private static StatementSyntax GetAttributeValueAssignmentStatement(string propertyName, string fieldName)
     {
-        return AssignmentWidget(
+        return AssignmentStatementWidget(
             left: MemberAccessWidget(identifier: "control", memberName: propertyName),
             right: MethodAccessWidget(
                 identifier: fieldName,

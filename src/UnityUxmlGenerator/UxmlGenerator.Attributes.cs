@@ -48,9 +48,9 @@ internal sealed partial class UxmlGenerator
                     identifier: "defaultValue",
                     type: NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))),
                     addDefaultKeyword: true),
-                bodyStatements: ExpressionStatement(AssignmentWidget(
+                bodyStatements: AssignmentStatementWidget(
                     left: IdentifierName("DefaultValue"),
-                    right: IdentifierName("defaultValue"))),
+                    right: IdentifierName("defaultValue")),
                 addGeneratedCodeAttributes: true
             ),
             PropertyWidget(
