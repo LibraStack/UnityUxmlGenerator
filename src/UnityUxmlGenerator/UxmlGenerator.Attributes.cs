@@ -26,14 +26,13 @@ internal sealed partial class UxmlGenerator
         MemberDeclarationSyntax[]? members = null)
     {
         return CompilationUnitWidget(
-                members: NamespaceWidget(
-                    identifier: AssemblyName.Name,
-                    member: ClassWidget(
-                        identifier: attributeClassIdentifier,
-                        modifiers: new[] { SyntaxKind.InternalKeyword, SyntaxKind.SealedKeyword },
-                        baseType: SimpleBaseType(IdentifierName(AttributeBaseType)),
-                        members: members,
-                        addGeneratedCodeAttributes: true)),
+                namespaceIdentifier: AssemblyName.Name,
+                members: ClassWidget(
+                    identifier: attributeClassIdentifier,
+                    modifiers: new[] { SyntaxKind.InternalKeyword, SyntaxKind.SealedKeyword },
+                    baseType: SimpleBaseType(IdentifierName(AttributeBaseType)),
+                    members: members,
+                    addGeneratedCodeAttributes: true),
                 normalizeWhitespace: true)
             .GetText(Encoding.UTF8);
     }
@@ -49,7 +48,7 @@ internal sealed partial class UxmlGenerator
                     identifier: "defaultValue",
                     type: NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))),
                     addDefaultKeyword: true),
-                body: ExpressionStatement(AssignmentWidget(
+                bodyStatements: ExpressionStatement(AssignmentWidget(
                     left: IdentifierName("DefaultValue"),
                     right: IdentifierName("defaultValue"))),
                 addGeneratedCodeAttributes: true
@@ -58,7 +57,7 @@ internal sealed partial class UxmlGenerator
                 identifier: "DefaultValue",
                 type: NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))),
                 modifier: SyntaxKind.PublicKeyword,
-                accessor: SyntaxKind.GetAccessorDeclaration,
+                accessors: SyntaxKind.GetAccessorDeclaration,
                 addGeneratedCodeAttributes: true
             )
         };

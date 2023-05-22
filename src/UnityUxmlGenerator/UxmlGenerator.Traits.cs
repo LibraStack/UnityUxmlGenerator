@@ -18,18 +18,17 @@ internal sealed partial class UxmlGenerator
     private static SourceText GenerateUxmlTraits(GeneratorExecutionContext context, UxmlTraitsCapture capture)
     {
         return CompilationUnitWidget(
-                members: NamespaceWidget(
-                    identifier: capture.ClassNamespace,
+                namespaceIdentifier: capture.ClassNamespace,
+                members: ClassWidget(
+                    identifier: capture.ClassName,
+                    modifier: SyntaxKind.PartialKeyword,
                     member: ClassWidget(
-                        identifier: capture.ClassName,
-                        modifier: SyntaxKind.PartialKeyword,
-                        member: ClassWidget(
-                            identifier: "UxmlTraits",
-                            modifiers: new[] { SyntaxKind.PublicKeyword, SyntaxKind.NewKeyword },
-                            baseType: SimpleBaseType(IdentifierName($"{GetBaseClassName(context, capture)}.UxmlTraits")),
-                            members: GetTraitsClassMembers(context, capture),
-                            addGeneratedCodeAttributes: true
-                        ))),
+                        identifier: "UxmlTraits",
+                        modifiers: new[] { SyntaxKind.PublicKeyword, SyntaxKind.NewKeyword },
+                        baseType: SimpleBaseType(IdentifierName($"{GetBaseClassName(context, capture)}.UxmlTraits")),
+                        members: GetTraitsClassMembers(context, capture),
+                        addGeneratedCodeAttributes: true
+                    )),
                 normalizeWhitespace: true)
             .GetText(Encoding.UTF8);
     }
@@ -100,7 +99,7 @@ internal sealed partial class UxmlGenerator
                     identifier: "context",
                     type: IdentifierName(string.Format(UnityUiElementsFullName, "CreationContext"))),
             },
-            body: initMethodBody.ToArray(),
+            bodyStatements: initMethodBody.ToArray(),
             addGeneratedCodeAttributes: true
         );
 

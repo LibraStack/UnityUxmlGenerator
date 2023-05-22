@@ -12,17 +12,16 @@ internal sealed partial class UxmlGenerator
     private static SourceText GenerateUxmlFactory(UxmlFactoryCapture capture)
     {
         return CompilationUnitWidget(
-                members: NamespaceWidget(
-                    identifier: capture.ClassNamespace,
+                namespaceIdentifier: capture.ClassNamespace,
+                members: ClassWidget(
+                    identifier: capture.ClassName,
+                    modifier: SyntaxKind.PartialKeyword,
                     member: ClassWidget(
-                        identifier: capture.ClassName,
-                        modifier: SyntaxKind.PartialKeyword,
-                        member: ClassWidget(
-                            identifier: "UxmlFactory",
-                            modifiers: new[] { SyntaxKind.PublicKeyword, SyntaxKind.NewKeyword },
-                            baseType: SimpleBaseType(IdentifierName(string.Format(FactoryBaseTypeIdentifier, capture.ClassName))),
-                            addGeneratedCodeAttributes: true
-                        ))),
+                        identifier: "UxmlFactory",
+                        modifiers: new[] { SyntaxKind.PublicKeyword, SyntaxKind.NewKeyword },
+                        baseType: SimpleBaseType(IdentifierName(string.Format(FactoryBaseTypeIdentifier, capture.ClassName))),
+                        addGeneratedCodeAttributes: true
+                    )),
                 normalizeWhitespace: true)
             .GetText(Encoding.UTF8);
     }

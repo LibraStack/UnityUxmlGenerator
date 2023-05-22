@@ -7,13 +7,19 @@ namespace UnityUxmlGenerator;
 internal sealed partial class UxmlGenerator
 {
     private static CompilationUnitSyntax CompilationUnitWidget(
+        string? namespaceIdentifier = null,
         bool addGeneratedCodeLeadingTrivia = true,
         bool normalizeWhitespace = true,
         params MemberDeclarationSyntax[]? members)
     {
         var compilationUnit = CompilationUnit();
 
-        if (members is not null)
+        if (string.IsNullOrWhiteSpace(namespaceIdentifier) == false)
+        {
+            compilationUnit =
+                compilationUnit.AddMembers(NamespaceWidget(identifier: namespaceIdentifier!, members: members));
+        }
+        else if (members is not null)
         {
             compilationUnit = compilationUnit.AddMembers(members);
         }
@@ -90,7 +96,7 @@ internal sealed partial class UxmlGenerator
         ParameterSyntax? parameter = null,
         ParameterSyntax[]? parameters = null,
         bool addGeneratedCodeAttributes = false,
-        params StatementSyntax[]? body)
+        params StatementSyntax[]? bodyStatements)
     {
         var constructorDeclaration = ConstructorDeclaration(Identifier(identifier));
 
@@ -104,9 +110,9 @@ internal sealed partial class UxmlGenerator
             constructorDeclaration = constructorDeclaration.AddParameterListParameters(parameters);
         }
 
-        if (body is not null)
+        if (bodyStatements is not null)
         {
-            constructorDeclaration = constructorDeclaration.WithBody(Block(body));
+            constructorDeclaration = constructorDeclaration.WithBody(Block(bodyStatements));
         }
 
         return BaseWidgetDecoration(constructorDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
@@ -137,14 +143,14 @@ internal sealed partial class UxmlGenerator
         SyntaxKind? modifier = null,
         SyntaxKind[]? modifiers = null,
         bool addGeneratedCodeAttributes = false,
-        params SyntaxKind[]? accessor)
+        params SyntaxKind[]? accessors)
     {
         var propertyDeclaration = PropertyDeclaration(type, Identifier(identifier));
 
-        if (accessor is not null)
+        if (accessors is not null)
         {
             propertyDeclaration =
-                propertyDeclaration.AddAccessorListAccessors(accessor.Select(AccessorWidget).ToArray());
+                propertyDeclaration.AddAccessorListAccessors(accessors.Select(AccessorWidget).ToArray());
         }
 
         return BaseWidgetDecoration(propertyDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
@@ -158,7 +164,7 @@ internal sealed partial class UxmlGenerator
         ParameterSyntax? parameter = null,
         ParameterSyntax[]? parameters = null,
         bool addGeneratedCodeAttributes = false,
-        params StatementSyntax[]? body)
+        params StatementSyntax[]? bodyStatements)
     {
         var methodDeclaration = MethodDeclaration(type, Identifier(identifier));
 
@@ -172,9 +178,9 @@ internal sealed partial class UxmlGenerator
             methodDeclaration = methodDeclaration.AddParameterListParameters(parameters);
         }
 
-        if (body is not null)
+        if (bodyStatements is not null)
         {
-            methodDeclaration = methodDeclaration.WithBody(Block(body));
+            methodDeclaration = methodDeclaration.WithBody(Block(bodyStatements));
         }
 
         return BaseWidgetDecoration(methodDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
