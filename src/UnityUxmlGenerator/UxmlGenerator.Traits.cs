@@ -130,7 +130,7 @@ internal sealed partial class UxmlGenerator
 
         var info = new UxmlAttributeInfo
         {
-            TypeIdentifier = GetPropertyTypeIdentifier(context, property, out var typeSyntax),
+            TypeIdentifier = GetPropertyTypeIdentifier(context, property, out var typeSyntax, out var typeNamespace),
             PrivateFieldName = propertyName.ToPrivateFieldName(),
             AttributeUxmlName = propertyName.ToDashCase()
         };
@@ -168,31 +168,33 @@ internal sealed partial class UxmlGenerator
             return info;
         }
 
-        info.DefaultValueAssignmentExpression = IdentifierName(uxmlAttributeDefaultValue);
+        info.DefaultValueAssignmentExpression = IdentifierName($"global::{typeNamespace}.{uxmlAttributeDefaultValue}");
         return info;
     }
 
     private static string GetPropertyTypeIdentifier(GeneratorExecutionContext context,
-        BasePropertyDeclarationSyntax property, out TypeSyntax? typeSyntax)
+        BasePropertyDeclarationSyntax property, out TypeSyntax? typeSyntax, out string? typeNamespace)
     {
         switch (property.Type)
         {
             case PredefinedTypeSyntax predefinedType:
             {
-                var propertyTypeIdentifier = predefinedType.Keyword.Text.FirstCharToUpper();
-
                 typeSyntax = predefinedType;
+                typeNamespace = default;
+
+                var propertyTypeIdentifier = predefinedType.Keyword.Text.FirstCharToUpper();
 
                 return $"Uxml{propertyTypeIdentifier}AttributeDescription";
             }
 
             case IdentifierNameSyntax customTypeSyntax:
             {
+                typeSyntax = customTypeSyntax;
+                typeNamespace = customTypeSyntax.GetTypeNamespace(context);
+
                 var type = customTypeSyntax.Identifier.Text;
-                var typeNamespace = customTypeSyntax.GetTypeNamespace(context);
                 var propertyTypeText = $"global::{typeNamespace}.{type}";
 
-                typeSyntax = customTypeSyntax;
 
                 return propertyTypeText == UnityColorTypeFullName
                     ? UxmlColorAttributeDescription
@@ -201,6 +203,7 @@ internal sealed partial class UxmlGenerator
 
             default:
                 typeSyntax = default;
+                typeNamespace = default;
                 return property.Type.GetText().ToString().Trim();
         }
     }
