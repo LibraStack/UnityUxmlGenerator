@@ -2,6 +2,8 @@
 
 This package is part of [UnityMvvmToolkit](https://github.com/LibraStack/UnityMvvmToolkit).
 
+![unityuxmlgenerator-github-cover](https://github.com/LibraStack/UnityUxmlGenerator/assets/28132516/c8c1ee74-ee9f-4343-a859-b2eb05bd152f)
+
 ## :open_book: Table of Contents
 
 - [About](#pencil-about)
