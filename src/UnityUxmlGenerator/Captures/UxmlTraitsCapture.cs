@@ -7,13 +7,13 @@ internal sealed class UxmlTraitsCapture : BaseCapture
     public UxmlTraitsCapture(ClassDeclarationSyntax @class, TypeSyntax baseClassType) : base(@class)
     {
         BaseClassType = baseClassType;
-        Properties = new List<(PropertyDeclarationSyntax property, string? DefaultValue)>();
+        Properties = new List<(PropertyDeclarationSyntax, AttributeSyntax)>();
     }
 
     public override string ClassTag => "UxmlTraits";
 
     public TypeSyntax BaseClassType { get; }
-    public List<(PropertyDeclarationSyntax property, string? DefaultValue)> Properties { get; }
+    public List<(PropertyDeclarationSyntax Property, AttributeSyntax Attribute)> Properties { get; }
 
     public string GetBaseClassName(out TypeSyntax? genericTypeSyntax)
     {

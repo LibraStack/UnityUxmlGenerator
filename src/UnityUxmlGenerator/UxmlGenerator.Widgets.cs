@@ -8,20 +8,29 @@ internal sealed partial class UxmlGenerator
 {
     private static CompilationUnitSyntax CompilationUnitWidget(
         string? namespaceIdentifier = null,
+        MemberDeclarationSyntax? member = null,
+        IEnumerable<MemberDeclarationSyntax>? members = null,
         bool addGeneratedCodeLeadingTrivia = true,
-        bool normalizeWhitespace = true,
-        params MemberDeclarationSyntax[]? members)
+        bool normalizeWhitespace = true)
     {
         var compilationUnit = CompilationUnit();
 
         if (string.IsNullOrWhiteSpace(namespaceIdentifier) == false)
         {
-            compilationUnit =
-                compilationUnit.AddMembers(NamespaceWidget(identifier: namespaceIdentifier!, members: members));
+            compilationUnit = compilationUnit
+                .AddMembers(NamespaceWidget(identifier: namespaceIdentifier!, member: member, members: members));
         }
-        else if (members is not null)
+        else
         {
-            compilationUnit = compilationUnit.AddMembers(members);
+            if (member is not null)
+            {
+                compilationUnit = compilationUnit.WithMembers(compilationUnit.Members.Add(member));
+            }
+
+            if (members is not null)
+            {
+                compilationUnit = compilationUnit.WithMembers(List(members));
+            }
         }
 
         if (addGeneratedCodeLeadingTrivia)
@@ -37,18 +46,18 @@ internal sealed partial class UxmlGenerator
     private static NamespaceDeclarationSyntax NamespaceWidget(
         string identifier,
         MemberDeclarationSyntax? member = null,
-        MemberDeclarationSyntax[]? members = null)
+        IEnumerable<MemberDeclarationSyntax>? members = null)
     {
         var namespaceDeclaration = NamespaceDeclaration(IdentifierName(identifier));
 
         if (member is not null)
         {
-            namespaceDeclaration = namespaceDeclaration.AddMembers(member);
+            namespaceDeclaration = namespaceDeclaration.WithMembers(namespaceDeclaration.Members.Add(member));
         }
 
         if (members is not null)
         {
-            namespaceDeclaration = namespaceDeclaration.AddMembers(members);
+            namespaceDeclaration = namespaceDeclaration.WithMembers(List(members));
         }
 
         return namespaceDeclaration;
@@ -57,11 +66,11 @@ internal sealed partial class UxmlGenerator
     private static ClassDeclarationSyntax ClassWidget(
         string identifier,
         SyntaxKind? modifier = null,
-        SyntaxKind[]? modifiers = null,
+        IEnumerable<SyntaxKind>? modifiers = null,
         BaseTypeSyntax? baseType = null,
-        BaseTypeSyntax[]? baseTypes = null,
+        IEnumerable<BaseTypeSyntax>? baseTypes = null,
         MemberDeclarationSyntax? member = null,
-        MemberDeclarationSyntax[]? members = null,
+        IEnumerable<MemberDeclarationSyntax>? members = null,
         bool addGeneratedCodeAttributes = false)
     {
         var classDeclaration = ClassDeclaration(identifier);
@@ -78,12 +87,12 @@ internal sealed partial class UxmlGenerator
 
         if (member is not null)
         {
-            classDeclaration = classDeclaration.AddMembers(member);
+            classDeclaration = classDeclaration.WithMembers(classDeclaration.Members.Add(member));
         }
 
         if (members is not null)
         {
-            classDeclaration = classDeclaration.AddMembers(members);
+            classDeclaration = classDeclaration.WithMembers(List(members));
         }
 
         return BaseWidgetDecoration(classDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
@@ -92,22 +101,30 @@ internal sealed partial class UxmlGenerator
     private static ConstructorDeclarationSyntax ConstructorWidget(
         string identifier,
         SyntaxKind? modifier = null,
-        SyntaxKind[]? modifiers = null,
+        IEnumerable<SyntaxKind>? modifiers = null,
         ParameterSyntax? parameter = null,
-        ParameterSyntax[]? parameters = null,
-        bool addGeneratedCodeAttributes = false,
-        params StatementSyntax[]? bodyStatements)
+        IEnumerable<ParameterSyntax>? parameters = null,
+        StatementSyntax? bodyStatement = null,
+        IEnumerable<StatementSyntax>? bodyStatements = null,
+        bool addGeneratedCodeAttributes = false)
     {
         var constructorDeclaration = ConstructorDeclaration(Identifier(identifier));
 
         if (parameter is not null)
         {
-            constructorDeclaration = constructorDeclaration.AddParameterListParameters(parameter);
+            constructorDeclaration = constructorDeclaration.WithParameterList(constructorDeclaration.ParameterList
+                .WithParameters(constructorDeclaration.ParameterList.Parameters.Add(parameter)));
         }
 
         if (parameters is not null)
         {
-            constructorDeclaration = constructorDeclaration.AddParameterListParameters(parameters);
+            constructorDeclaration = constructorDeclaration.WithParameterList(constructorDeclaration.ParameterList
+                .WithParameters(constructorDeclaration.ParameterList.Parameters.AddRange(parameters)));
+        }
+
+        if (bodyStatement is not null)
+        {
+            constructorDeclaration = constructorDeclaration.WithBody(Block(SingletonList(bodyStatement)));
         }
 
         if (bodyStatements is not null)
@@ -122,14 +139,24 @@ internal sealed partial class UxmlGenerator
         string identifier,
         TypeSyntax type,
         SyntaxKind? modifier = null,
-        SyntaxKind[]? modifiers = null,
-        bool addGeneratedCodeAttributes = false,
-        params ExpressionSyntax[]? initializers)
+        IEnumerable<SyntaxKind>? modifiers = null,
+        ExpressionSyntax? initializer = null,
+        IEnumerable<ExpressionSyntax>? initializers = null,
+        bool addGeneratedCodeAttributes = false)
     {
-        var variableDeclaration = VariableDeclarator(Identifier(identifier))
-            .WithInitializer(EqualsValueClause(ImplicitObjectCreationExpression()
-                .WithInitializer(InitializerExpression(SyntaxKind.ObjectInitializerExpression,
-                    SeparatedList(initializers)))));
+        var variableDeclaration = VariableDeclarator(Identifier(identifier));
+
+        if (initializer is not null)
+        {
+            variableDeclaration = variableDeclaration.WithInitializer(EqualsValueClause(ImplicitObjectCreationExpression()
+                .WithInitializer(InitializerExpression(SyntaxKind.ObjectInitializerExpression, SingletonSeparatedList(initializer)))));
+        }
+
+        if (initializers is not null)
+        {
+            variableDeclaration = variableDeclaration.WithInitializer(EqualsValueClause(ImplicitObjectCreationExpression()
+                    .WithInitializer(InitializerExpression(SyntaxKind.ObjectInitializerExpression, SeparatedList(initializers)))));
+        }
 
         var fieldDeclaration = FieldDeclaration(VariableDeclaration(type)
             .WithVariables(SingletonSeparatedList(variableDeclaration)));
@@ -141,16 +168,27 @@ internal sealed partial class UxmlGenerator
         string identifier,
         TypeSyntax type,
         SyntaxKind? modifier = null,
-        SyntaxKind[]? modifiers = null,
-        bool addGeneratedCodeAttributes = false,
-        params SyntaxKind[]? accessors)
+        IEnumerable<SyntaxKind>? modifiers = null,
+        SyntaxKind? accessor = null,
+        IEnumerable<SyntaxKind>? accessors = null,
+        bool addGeneratedCodeAttributes = false)
     {
         var propertyDeclaration = PropertyDeclaration(type, Identifier(identifier));
 
+        if (accessor is not null)
+        {
+            var accessorList = propertyDeclaration.AccessorList ?? AccessorList();
+
+            propertyDeclaration = propertyDeclaration.WithAccessorList(accessorList
+                .WithAccessors(accessorList.Accessors.Add(AccessorWidget(accessor.Value))));
+        }
+
         if (accessors is not null)
         {
-            propertyDeclaration =
-                propertyDeclaration.AddAccessorListAccessors(accessors.Select(AccessorWidget).ToArray());
+            var accessorList = propertyDeclaration.AccessorList ?? AccessorList();
+
+            propertyDeclaration = propertyDeclaration.WithAccessorList(accessorList
+                .WithAccessors(accessorList.Accessors.AddRange(accessors.Select(AccessorWidget))));
         }
 
         return BaseWidgetDecoration(propertyDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
@@ -160,22 +198,30 @@ internal sealed partial class UxmlGenerator
         string identifier,
         TypeSyntax type,
         SyntaxKind? modifier = null,
-        SyntaxKind[]? modifiers = null,
+        IEnumerable<SyntaxKind>? modifiers = null,
         ParameterSyntax? parameter = null,
-        ParameterSyntax[]? parameters = null,
-        bool addGeneratedCodeAttributes = false,
-        params StatementSyntax[]? bodyStatements)
+        IEnumerable<ParameterSyntax>? parameters = null,
+        StatementSyntax? bodyStatement = null,
+        IEnumerable<StatementSyntax>? bodyStatements = null,
+        bool addGeneratedCodeAttributes = false)
     {
         var methodDeclaration = MethodDeclaration(type, Identifier(identifier));
 
         if (parameter is not null)
         {
-            methodDeclaration = methodDeclaration.AddParameterListParameters(parameter);
+            methodDeclaration = methodDeclaration.WithParameterList(methodDeclaration.ParameterList
+                .WithParameters(methodDeclaration.ParameterList.Parameters.Add(parameter)));
         }
 
         if (parameters is not null)
         {
-            methodDeclaration = methodDeclaration.AddParameterListParameters(parameters);
+            methodDeclaration = methodDeclaration.WithParameterList(methodDeclaration.ParameterList
+                .WithParameters(methodDeclaration.ParameterList.Parameters.AddRange(parameters)));
+        }
+
+        if (bodyStatement is not null)
+        {
+            methodDeclaration = methodDeclaration.WithBody(Block(SingletonList(bodyStatement)));
         }
 
         if (bodyStatements is not null)
@@ -205,14 +251,22 @@ internal sealed partial class UxmlGenerator
 
     private static StatementSyntax MethodBaseCallWidget(
         string identifier,
-        params ArgumentSyntax[]? arguments)
+        ArgumentSyntax? argument = null,
+        IEnumerable<ArgumentSyntax>? arguments = null)
     {
         var baseExpression = InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
             BaseExpression(), IdentifierName(identifier)));
 
+        if (argument is not null)
+        {
+            baseExpression = baseExpression.WithArgumentList(baseExpression.ArgumentList
+                .WithArguments(baseExpression.ArgumentList.Arguments.Add(argument)));
+        }
+
         if (arguments is not null)
         {
-            baseExpression = baseExpression.AddArgumentListArguments(arguments);
+            baseExpression = baseExpression.WithArgumentList(baseExpression.ArgumentList
+                .WithArguments(baseExpression.ArgumentList.Arguments.AddRange(arguments)));
         }
 
         return ExpressionStatement(baseExpression);
@@ -224,10 +278,8 @@ internal sealed partial class UxmlGenerator
     {
         return
             LocalDeclarationStatement(
-                VariableDeclaration(IdentifierName(Identifier(TriviaList(), SyntaxKind.VarKeyword, "var", "var",
-                        TriviaList())))
-                    .WithVariables(
-                        SingletonSeparatedList(VariableDeclarator(Identifier(identifier))
+                VariableDeclaration(IdentifierName(Identifier(TriviaList(), SyntaxKind.VarKeyword, "var", "var", TriviaList())))
+                    .WithVariables(SingletonSeparatedList(VariableDeclarator(Identifier(identifier))
                             .WithInitializer(initializer))));
     }
 
@@ -262,17 +314,25 @@ internal sealed partial class UxmlGenerator
             IdentifierName(memberName));
     }
 
-    private static ExpressionSyntax MethodAccessWidget(
-        string identifier,
+    private static ExpressionSyntax MethodInvocationWidget(
+        string memberIdentifier,
         string methodName,
-        params ArgumentSyntax[]? arguments)
+        ArgumentSyntax? argument = null,
+        IEnumerable<ArgumentSyntax>? arguments = null)
     {
         var invocationSyntax =
-            InvocationExpression(MemberAccessWidget(identifier: identifier, memberName: methodName));
+            InvocationExpression(MemberAccessWidget(identifier: memberIdentifier, memberName: methodName));
+
+        if (argument is not null)
+        {
+            invocationSyntax = invocationSyntax.WithArgumentList(invocationSyntax.ArgumentList
+                .WithArguments(invocationSyntax.ArgumentList.Arguments.Add(argument)));
+        }
 
         if (arguments is not null)
         {
-            invocationSyntax = invocationSyntax.AddArgumentListArguments(arguments);
+            invocationSyntax = invocationSyntax.WithArgumentList(invocationSyntax.ArgumentList
+                .WithArguments(invocationSyntax.ArgumentList.Arguments.AddRange(arguments)));
         }
 
         return invocationSyntax;
@@ -282,16 +342,16 @@ internal sealed partial class UxmlGenerator
     {
         return AccessorDeclaration(kind).WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
     }
-    
+
     private static TSyntax BaseWidgetDecoration<TSyntax>(
         TSyntax widget,
         SyntaxKind? modifier,
-        SyntaxKind[]? modifiers,
+        IEnumerable<SyntaxKind>? modifiers,
         bool addGeneratedCodeAttributes) where TSyntax : MemberDeclarationSyntax
     {
         if (modifier is not null)
         {
-            widget = (TSyntax) widget.AddModifiers(Token(modifier.Value));
+            widget = (TSyntax) widget.WithModifiers(widget.Modifiers.Add(Token(modifier.Value)));
         }
 
         if (modifiers is not null)

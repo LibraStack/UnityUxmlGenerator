@@ -12,7 +12,7 @@ internal abstract class BaseReceiver : ISyntaxReceiver
     public abstract void OnVisitSyntaxNode(SyntaxNode syntaxNode);
 
     protected void RegisterDiagnostic(DiagnosticDescriptor diagnosticDescriptor, Location location,
-        params object[] args)
+        params object?[]? args)
     {
         _diagnostics.Add(diagnosticDescriptor.CreateDiagnostic(location, args));
     }

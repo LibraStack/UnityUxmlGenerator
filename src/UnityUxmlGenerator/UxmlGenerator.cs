@@ -36,30 +36,48 @@ internal sealed partial class UxmlGenerator : ISourceGenerator
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            AddSource(context, uxmlElement, GenerateUxmlFactory(uxmlElement));
+            if (IsValidClass(context, uxmlElement.Class) &&
+                IsValidAttribute(context, uxmlElement.Attribute))
+            {
+                AddSource(context, uxmlElement, GenerateUxmlFactory(uxmlElement));
+            }
         }
 
         foreach (var capture in receiver.UxmlTraitsReceiver.Captures)
         {
             context.CancellationToken.ThrowIfCancellationRequested();
 
-            AddSource(context, capture.Value, GenerateUxmlTraits(context, capture.Value));
+            var uxmlTraits = capture.Value;
+
+            if (IsValidClass(context, uxmlTraits.Class))
+            {
+                AddSource(context, capture.Value, GenerateUxmlTraits(context, capture.Value));
+            }
         }
 
         ReportDiagnostics(context, receiver.UxmlTraitsReceiver.Diagnostics);
         ReportDiagnostics(context, receiver.UxmlFactoryReceiver.Diagnostics);
     }
 
+    private static bool IsValidClass(GeneratorExecutionContext context, BaseTypeDeclarationSyntax @class)
+    {
+        if (@class.InheritsFromFullyQualifiedName(context, VisualElementFullName))
+        {
+            return true;
+        }
+
+        ReportClassDoesNotInheritFromVisualElementError(context, @class);
+        return false;
+    }
+
+    private static bool IsValidAttribute(GeneratorExecutionContext context, AttributeSyntax attribute)
+    {
+        return attribute.GetTypeNamespace(context) == AssemblyName.Name;
+    }
+
     private static void AddSource(GeneratorExecutionContext context, BaseCapture capture, SourceText sourceText)
     {
-        if (capture.Class.InheritsFromFullyQualifiedName(context, VisualElementFullName))
-        {
-            context.AddSource($"{capture.ClassName}.{capture.ClassTag}.g.cs", sourceText);
-        }
-        else
-        {
-            ReportClassDoesNotInheritFromVisualElementError(context, capture.Class);
-        }
+        context.AddSource($"{capture.ClassName}.{capture.ClassTag}.g.cs", sourceText);
     }
 
     private static void ReportDiagnostics(GeneratorExecutionContext context, IEnumerable<Diagnostic> diagnostics)

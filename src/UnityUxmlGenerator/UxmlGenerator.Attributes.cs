@@ -23,11 +23,11 @@ internal sealed partial class UxmlGenerator
     }
 
     private static SourceText GenerateAttributeClass(string attributeClassIdentifier,
-        MemberDeclarationSyntax[]? members = null)
+        IEnumerable<MemberDeclarationSyntax>? members = null)
     {
         return CompilationUnitWidget(
                 namespaceIdentifier: AssemblyName.Name,
-                members: ClassWidget(
+                member: ClassWidget(
                     identifier: attributeClassIdentifier,
                     modifiers: new[] { SyntaxKind.InternalKeyword, SyntaxKind.SealedKeyword },
                     baseType: SimpleBaseType(IdentifierName(AttributeBaseType)),
@@ -37,7 +37,7 @@ internal sealed partial class UxmlGenerator
             .GetText(Encoding.UTF8);
     }
 
-    private static MemberDeclarationSyntax[] GetUxmlAttributeMembers()
+    private static IEnumerable<MemberDeclarationSyntax> GetUxmlAttributeMembers()
     {
         return new MemberDeclarationSyntax[]
         {
@@ -48,7 +48,7 @@ internal sealed partial class UxmlGenerator
                     identifier: "defaultValue",
                     type: NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))),
                     addDefaultKeyword: true),
-                bodyStatements: AssignmentStatementWidget(
+                bodyStatement: AssignmentStatementWidget(
                     left: IdentifierName("DefaultValue"),
                     right: IdentifierName("defaultValue")),
                 addGeneratedCodeAttributes: true
@@ -57,7 +57,7 @@ internal sealed partial class UxmlGenerator
                 identifier: "DefaultValue",
                 type: NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))),
                 modifier: SyntaxKind.PublicKeyword,
-                accessors: SyntaxKind.GetAccessorDeclaration,
+                accessor: SyntaxKind.GetAccessorDeclaration,
                 addGeneratedCodeAttributes: true
             )
         };

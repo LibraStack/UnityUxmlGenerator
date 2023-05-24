@@ -16,23 +16,20 @@ internal sealed class UxmlTraitsReceiver : BaseReceiver
 
     public override void OnVisitSyntaxNode(SyntaxNode syntaxNode)
     {
-        if (syntaxNode is not AttributeSyntax
-            {
-                Name: IdentifierNameSyntax { Identifier.Text: AttributeName }
-            } attribute)
+        if (syntaxNode.IsAttributeWithName(AttributeName, out var attribute) == false)
         {
             return;
         }
 
-        var property = attribute.GetParent<PropertyDeclarationSyntax>();
+        var property = attribute!.GetParent<PropertyDeclarationSyntax>();
         if (property is null)
         {
             return;
         }
 
-        if (attribute.ArgumentList is not null && attribute.ArgumentList.Arguments.Any())
+        if (attribute!.ArgumentList is not null && attribute.ArgumentList.Arguments.Any())
         {
-            if (HasSameType(property, attribute) == false)
+            if (HasSameType(property, attribute.ArgumentList.Arguments.First()) == false)
             {
                 RegisterDiagnostic(PropertyAndDefaultValueTypesMismatchError, property.GetLocation(),
                     property.GetName());
@@ -61,12 +58,12 @@ internal sealed class UxmlTraitsReceiver : BaseReceiver
             _captures.Add(uxmlTraits.ClassName, uxmlTraits);
         }
 
-        uxmlTraits.Properties.Add((property, GetAttributeArgumentValue(attribute)));
+        uxmlTraits.Properties.Add((property, attribute));
     }
 
-    private static bool HasSameType(BasePropertyDeclarationSyntax property, AttributeSyntax attribute)
+    private static bool HasSameType(BasePropertyDeclarationSyntax property, AttributeArgumentSyntax attributeArgument)
     {
-        var parameter = attribute.ArgumentList!.Arguments.First().Expression;
+        var parameter = attributeArgument.Expression;
 
         if (parameter.IsKind(SyntaxKind.DefaultLiteralExpression))
         {
@@ -95,42 +92,20 @@ internal sealed class UxmlTraitsReceiver : BaseReceiver
             }
         }
 
-        if (property.Type is IdentifierNameSyntax identifierName)
+        SyntaxToken? propertyTypeIdentifier = property.Type switch
         {
-            if (identifierName.Identifier.IsKind(SyntaxKind.IdentifierToken) &&
-                (parameter.IsKind(SyntaxKind.InvocationExpression) ||
-                 parameter.IsKind(SyntaxKind.SimpleMemberAccessExpression)))
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private static string? GetAttributeArgumentValue(AttributeSyntax attribute)
-    {
-        if (attribute.ArgumentList is null || attribute.ArgumentList.Arguments.Any() == false)
-        {
-            return null;
-        }
-
-        return attribute.ArgumentList.Arguments.Single().Expression switch
-        {
-            LiteralExpressionSyntax literal => GetLiteralExpressionValue(literal),
-            InvocationExpressionSyntax invocation => invocation.ArgumentList.Arguments.Single().Expression.GetText().ToString(),
-            MemberAccessExpressionSyntax member => member.Parent?.ToString(),
+            IdentifierNameSyntax identifierName => identifierName.Identifier,
+            QualifiedNameSyntax qualifiedNameSyntax => qualifiedNameSyntax.Right.Identifier,
             _ => null
         };
-    }
 
-    private static string? GetLiteralExpressionValue(LiteralExpressionSyntax literal)
-    {
-        if (literal.Token.IsKind(SyntaxKind.DefaultKeyword))
+        if (propertyTypeIdentifier is null)
         {
-            return null;
+            return false;
         }
 
-        return literal.Token.IsKind(SyntaxKind.StringLiteralToken) ? literal.Token.ValueText : literal.Token.Text;
+        return propertyTypeIdentifier.Value.IsKind(SyntaxKind.IdentifierToken) &&
+               (parameter.IsKind(SyntaxKind.InvocationExpression) ||
+                parameter.IsKind(SyntaxKind.SimpleMemberAccessExpression));
     }
 }

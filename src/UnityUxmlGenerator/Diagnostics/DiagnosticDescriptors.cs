@@ -27,4 +27,20 @@ internal static class DiagnosticDescriptors
         category: typeof(UxmlGenerator).FullName,
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor PropertyTypeIsNotSupportedError = new(
+        id: "UXMLG004",
+        title: "Property type is not supported",
+        messageFormat: "Property type '{0}' can not be used as an attribute.",
+        category: typeof(UxmlGenerator).FullName,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
+
+    public static readonly DiagnosticDescriptor IncorrectEnumDefaultValueTypeError = new(
+        id: "UXMLG005",
+        title: "Type cannot be the default value for an enum",
+        messageFormat: "Type '{0}' cannot be the default value for an enum.",
+        category: typeof(UxmlGenerator).FullName,
+        defaultSeverity: DiagnosticSeverity.Error,
+        isEnabledByDefault: true);
 }

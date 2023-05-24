@@ -13,7 +13,7 @@ internal sealed partial class UxmlGenerator
     {
         return CompilationUnitWidget(
                 namespaceIdentifier: capture.ClassNamespace,
-                members: ClassWidget(
+                member: ClassWidget(
                     identifier: capture.ClassName,
                     modifier: SyntaxKind.PartialKeyword,
                     member: ClassWidget(
