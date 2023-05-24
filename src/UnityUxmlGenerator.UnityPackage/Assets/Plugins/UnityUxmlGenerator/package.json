@@ -2,7 +2,7 @@
     "name": "com.chebanovdd.unityuxmlgenerator",
     "displayName": "Unity Uxml Generator",
     "author": { "name": "ChebanovDD", "url": "https://github.com/ChebanovDD" },
-    "version": "0.0.2",
+    "version": "0.0.3",
     "unity": "2018.4",
     "description": "The Unity Uxml Generator allows you to generate 'UxmlFactory' and 'UxmlTraits' source code for a custom 'VisualElement'. Just mark elements with [UxmlElement] and [UxmlAttribute] attributes.",
     "keywords": [ "uxml", "source", "generator" ]
