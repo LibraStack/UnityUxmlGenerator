@@ -35,7 +35,7 @@ internal sealed partial class UxmlGenerator
 
         if (addGeneratedCodeLeadingTrivia)
         {
-            compilationUnit = GeneratedCodeLeadingTrivia(compilationUnit);
+            compilationUnit = AddGeneratedCodeLeadingTrivia(compilationUnit);
         }
 
         return normalizeWhitespace
@@ -71,6 +71,8 @@ internal sealed partial class UxmlGenerator
         IEnumerable<BaseTypeSyntax>? baseTypes = null,
         MemberDeclarationSyntax? member = null,
         IEnumerable<MemberDeclarationSyntax>? members = null,
+        AttributeSyntax? attribute = null,
+        IEnumerable<AttributeSyntax>? attributes = null,
         bool addGeneratedCodeAttributes = false)
     {
         var classDeclaration = ClassDeclaration(identifier);
@@ -95,7 +97,13 @@ internal sealed partial class UxmlGenerator
             classDeclaration = classDeclaration.WithMembers(List(members));
         }
 
-        return BaseWidgetDecoration(classDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
+        return BaseWidgetDecoration(
+            widget: classDeclaration,
+            modifier: modifier,
+            modifiers: modifiers,
+            attribute: attribute,
+            attributes: attributes,
+            addGeneratedCodeAttributes: addGeneratedCodeAttributes);
     }
 
     private static ConstructorDeclarationSyntax ConstructorWidget(
@@ -106,6 +114,8 @@ internal sealed partial class UxmlGenerator
         IEnumerable<ParameterSyntax>? parameters = null,
         StatementSyntax? bodyStatement = null,
         IEnumerable<StatementSyntax>? bodyStatements = null,
+        AttributeSyntax? attribute = null,
+        IEnumerable<AttributeSyntax>? attributes = null,
         bool addGeneratedCodeAttributes = false)
     {
         var constructorDeclaration = ConstructorDeclaration(Identifier(identifier));
@@ -132,7 +142,13 @@ internal sealed partial class UxmlGenerator
             constructorDeclaration = constructorDeclaration.WithBody(Block(bodyStatements));
         }
 
-        return BaseWidgetDecoration(constructorDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
+        return BaseWidgetDecoration(
+            widget: constructorDeclaration,
+            modifier: modifier,
+            modifiers: modifiers,
+            attribute: attribute,
+            attributes: attributes,
+            addGeneratedCodeAttributes: addGeneratedCodeAttributes);
     }
 
     private static FieldDeclarationSyntax FieldWidget(
@@ -142,6 +158,8 @@ internal sealed partial class UxmlGenerator
         IEnumerable<SyntaxKind>? modifiers = null,
         ExpressionSyntax? initializer = null,
         IEnumerable<ExpressionSyntax>? initializers = null,
+        AttributeSyntax? attribute = null,
+        IEnumerable<AttributeSyntax>? attributes = null,
         bool addGeneratedCodeAttributes = false)
     {
         var variableDeclaration = VariableDeclarator(Identifier(identifier));
@@ -161,7 +179,13 @@ internal sealed partial class UxmlGenerator
         var fieldDeclaration = FieldDeclaration(VariableDeclaration(type)
             .WithVariables(SingletonSeparatedList(variableDeclaration)));
 
-        return BaseWidgetDecoration(fieldDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
+        return BaseWidgetDecoration(
+            widget: fieldDeclaration,
+            modifier: modifier,
+            modifiers: modifiers,
+            attribute: attribute,
+            attributes: attributes,
+            addGeneratedCodeAttributes: addGeneratedCodeAttributes);
     }
 
     private static PropertyDeclarationSyntax PropertyWidget(
@@ -171,6 +195,9 @@ internal sealed partial class UxmlGenerator
         IEnumerable<SyntaxKind>? modifiers = null,
         SyntaxKind? accessor = null,
         IEnumerable<SyntaxKind>? accessors = null,
+        ExpressionSyntax? initializer = null,
+        AttributeSyntax? attribute = null,
+        IEnumerable<AttributeSyntax>? attributes = null,
         bool addGeneratedCodeAttributes = false)
     {
         var propertyDeclaration = PropertyDeclaration(type, Identifier(identifier));
@@ -191,7 +218,20 @@ internal sealed partial class UxmlGenerator
                 .WithAccessors(accessorList.Accessors.AddRange(accessors.Select(AccessorWidget))));
         }
 
-        return BaseWidgetDecoration(propertyDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
+        if (initializer is not null)
+        {
+            propertyDeclaration = propertyDeclaration
+                .WithInitializer(EqualsValueClause(initializer))
+                .WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
+        }
+
+        return BaseWidgetDecoration(
+            widget: propertyDeclaration,
+            modifier: modifier,
+            modifiers: modifiers,
+            attribute: attribute,
+            attributes: attributes,
+            addGeneratedCodeAttributes: addGeneratedCodeAttributes);
     }
 
     private static MethodDeclarationSyntax MethodWidget(
@@ -203,6 +243,8 @@ internal sealed partial class UxmlGenerator
         IEnumerable<ParameterSyntax>? parameters = null,
         StatementSyntax? bodyStatement = null,
         IEnumerable<StatementSyntax>? bodyStatements = null,
+        AttributeSyntax? attribute = null,
+        IEnumerable<AttributeSyntax>? attributes = null,
         bool addGeneratedCodeAttributes = false)
     {
         var methodDeclaration = MethodDeclaration(type, Identifier(identifier));
@@ -229,7 +271,13 @@ internal sealed partial class UxmlGenerator
             methodDeclaration = methodDeclaration.WithBody(Block(bodyStatements));
         }
 
-        return BaseWidgetDecoration(methodDeclaration, modifier, modifiers, addGeneratedCodeAttributes);
+        return BaseWidgetDecoration(
+            widget: methodDeclaration,
+            modifier: modifier,
+            modifiers: modifiers,
+            attribute: attribute,
+            attributes: attributes,
+            addGeneratedCodeAttributes: addGeneratedCodeAttributes);
     }
 
     private static ParameterSyntax ParameterWidget(
@@ -343,26 +391,85 @@ internal sealed partial class UxmlGenerator
         return AccessorDeclaration(kind).WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
     }
 
-    private static TSyntax BaseWidgetDecoration<TSyntax>(
-        TSyntax widget,
-        SyntaxKind? modifier,
-        IEnumerable<SyntaxKind>? modifiers,
-        bool addGeneratedCodeAttributes) where TSyntax : MemberDeclarationSyntax
+    private static AttributeSyntax AttributeWidget(
+        string identifier,
+        AttributeArgumentSyntax? argument = null,
+        IEnumerable<AttributeArgumentSyntax>? arguments = null
+    )
+    {
+        var attributeSyntax = Attribute(IdentifierName(identifier));
+
+        if (argument is not null)
+        {
+            var argumentList = attributeSyntax.ArgumentList ?? AttributeArgumentList();
+
+            attributeSyntax = attributeSyntax.WithArgumentList(argumentList
+                .WithArguments(argumentList.Arguments.Add(argument)));
+        }
+
+        if (arguments is not null)
+        {
+            var argumentList = attributeSyntax.ArgumentList ?? AttributeArgumentList();
+
+            attributeSyntax = attributeSyntax.WithArgumentList(argumentList
+                .WithArguments(argumentList.Arguments.AddRange(arguments)));
+        }
+
+        return attributeSyntax;
+    }
+
+    private static TWidget BaseWidgetDecoration<TWidget>(
+        TWidget widget,
+        SyntaxKind? modifier = null,
+        IEnumerable<SyntaxKind>? modifiers = null,
+        AttributeSyntax? attribute = null,
+        IEnumerable<AttributeSyntax>? attributes = null,
+        bool addGeneratedCodeAttributes = true) where TWidget : MemberDeclarationSyntax
     {
         if (modifier is not null)
         {
-            widget = (TSyntax) widget.WithModifiers(widget.Modifiers.Add(Token(modifier.Value)));
+            widget = (TWidget) widget.WithModifiers(widget.Modifiers.Add(Token(modifier.Value)));
         }
 
         if (modifiers is not null)
         {
-            widget = (TSyntax) widget.WithModifiers(TokenList(modifiers.Select(Token)));
+            widget = (TWidget) widget.WithModifiers(TokenList(modifiers.Select(Token)));
         }
 
-        return addGeneratedCodeAttributes ? GeneratedCodeAttributesWidget(widget) : widget;
+        if (addGeneratedCodeAttributes)
+        {
+            var attributesList = GetGeneratedCodeAttributes(widget);
+
+            if (attribute is not null)
+            {
+                attributesList.Add(attribute);
+            }
+
+            if (attributes is not null)
+            {
+                attributesList.AddRange(attributes);
+            }
+
+            return (TWidget) widget.WithAttributeLists(widget.AttributeLists.AddRange(
+                attributesList.Select(attributeSyntax => AttributeList(SingletonSeparatedList(attributeSyntax)))));
+        }
+
+        if (attribute is not null)
+        {
+            widget = (TWidget) widget.WithAttributeLists(widget.AttributeLists.Add(
+                AttributeList(SingletonSeparatedList(attribute))));
+        }
+
+        if (attributes is not null)
+        {
+            widget = (TWidget) widget.WithAttributeLists(widget.AttributeLists.AddRange(
+                attributes.Select(attributeSyntax => AttributeList(SingletonSeparatedList(attributeSyntax)))));
+        }
+
+        return widget;
     }
 
-    private static TSyntax GeneratedCodeLeadingTrivia<TSyntax>(TSyntax node) where TSyntax : SyntaxNode
+    private static TSyntax AddGeneratedCodeLeadingTrivia<TSyntax>(TSyntax node) where TSyntax : SyntaxNode
     {
         // Prepare the leading trivia for the generated compilation unit.
         // This will produce code as follows:
@@ -378,26 +485,28 @@ internal sealed partial class UxmlGenerator
         return node.WithLeadingTrivia(syntaxTriviaList);
     }
 
-    private static TSyntax GeneratedCodeAttributesWidget<TSyntax>(TSyntax member) where TSyntax : MemberDeclarationSyntax
+    private static List<AttributeSyntax> GetGeneratedCodeAttributes<TMember>(TMember member) where TMember : MemberDeclarationSyntax
     {
-        // [GeneratedCode] is always present.
-        member = (TSyntax) member
-            .WithoutLeadingTrivia()
-            .AddAttributeLists(AttributeList(SingletonSeparatedList(
-                Attribute(IdentifierName("global::System.CodeDom.Compiler.GeneratedCode"))
-                    .AddArgumentListArguments(
-                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(AssemblyName.Name))),
-                        AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(AssemblyName.Version.ToString())))))))
-            .WithLeadingTrivia(member.GetLeadingTrivia());
+        var attributes = new List<AttributeSyntax>
+        {
+            AttributeWidget(
+                identifier: "global::System.CodeDom.Compiler.GeneratedCode",
+                arguments: new[]
+                {
+                    AttributeArgument(
+                        LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(AssemblyName.Name))),
+                    AttributeArgument(
+                        LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(AssemblyName.Version.ToString())))
+                })
+        };
 
         // [ExcludeFromCodeCoverage] is not supported on interfaces and fields.
         if (member.Kind() is not SyntaxKind.InterfaceDeclaration and not SyntaxKind.FieldDeclaration)
         {
-            member = (TSyntax) member
-                .AddAttributeLists(AttributeList(SingletonSeparatedList(
-                    Attribute(IdentifierName("global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage")))));
+            attributes.Add(AttributeWidget(
+                identifier: "global::System.Diagnostics.CodeAnalysis.ExcludeFromCodeCoverage"));
         }
 
-        return member;
+        return attributes;
     }
 }
