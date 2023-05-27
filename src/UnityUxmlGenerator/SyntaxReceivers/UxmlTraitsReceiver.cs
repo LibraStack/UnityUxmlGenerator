@@ -16,18 +16,15 @@ internal sealed class UxmlTraitsReceiver : BaseReceiver
 
     public override void OnVisitSyntaxNode(SyntaxNode syntaxNode)
     {
-        if (syntaxNode.IsAttributeWithName(AttributeName, out var attribute) == false)
+        if (syntaxNode.IsMemberHasAttribute<PropertyDeclarationSyntax>(AttributeName,
+                out (PropertyDeclarationSyntax Property, AttributeSyntax Attribute) result) == false)
         {
             return;
         }
 
-        var property = attribute!.GetParent<PropertyDeclarationSyntax>();
-        if (property is null)
-        {
-            return;
-        }
+        var (property, attribute) = result;
 
-        if (attribute!.ArgumentList is not null && attribute.ArgumentList.Arguments.Any())
+        if (attribute.ArgumentList is not null && attribute.ArgumentList.Arguments.Any())
         {
             if (HasSameType(property, attribute.ArgumentList.Arguments.First()) == false)
             {
@@ -58,7 +55,7 @@ internal sealed class UxmlTraitsReceiver : BaseReceiver
             _captures.Add(uxmlTraits.ClassName, uxmlTraits);
         }
 
-        uxmlTraits.Properties.Add((property, attribute));
+        uxmlTraits.Properties.Add(result);
     }
 
     private static bool HasSameType(BasePropertyDeclarationSyntax property, AttributeArgumentSyntax attributeArgument)

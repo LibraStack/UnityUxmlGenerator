@@ -4,9 +4,9 @@ namespace UnityUxmlGenerator.Captures;
 
 internal sealed class UxmlFactoryCapture : BaseCapture
 {
-    public UxmlFactoryCapture(ClassDeclarationSyntax @class, AttributeSyntax attribute) : base(@class)
+    public UxmlFactoryCapture((ClassDeclarationSyntax Class, AttributeSyntax Attribute) data) : base(data.Class)
     {
-        Attribute = attribute;
+        Attribute = data.Attribute;
     }
 
     public override string ClassTag => "UxmlFactory";
