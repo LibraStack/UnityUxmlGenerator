@@ -5,38 +5,26 @@ namespace UnityUxmlGenerator.Extensions;
 
 internal static class SyntaxNodeExtensions
 {
-    public static bool IsMemberHasAttribute<TMember>(this SyntaxNode syntaxNode, string attributeName,
-        out (TMember Member, AttributeSyntax Attribute) result) where TMember : MemberDeclarationSyntax
+    public static bool IsAttributeWithName(this SyntaxNode syntaxNode, string attributeName,
+        out AttributeSyntax? attribute)
     {
-        if (syntaxNode is not TMember memberSyntax)
+        if (syntaxNode is not AttributeSyntax attributeSyntax)
         {
-            result = default;
+            attribute = default;
             return false;
         }
 
-        result.Member = memberSyntax;
+        attribute = attributeSyntax;
 
-        for (var i = 0; i < memberSyntax.AttributeLists.Count; i++)
+        switch (attributeSyntax.Name)
         {
-            var attributeList = memberSyntax.AttributeLists[i];
-            for (var j = 0; j < attributeList.Attributes.Count; j++)
-            {
-                var attributeSyntax = attributeList.Attributes[j];
-                switch (attributeSyntax.Name)
-                {
-                    case IdentifierNameSyntax identifierNameSyntax
-                        when identifierNameSyntax.Identifier.Text.Contains(attributeName):
-                    case QualifiedNameSyntax qualifiedNameSyntax
-                        when qualifiedNameSyntax.Right.Identifier.Text.Contains(attributeName):
-                    {
-                        result.Attribute = attributeSyntax;
-                        return true;
-                    }
-                }
-            }
+            case IdentifierNameSyntax identifierNameSyntax
+                when identifierNameSyntax.Identifier.Text.Contains(attributeName):
+            case QualifiedNameSyntax qualifiedNameSyntax
+                when qualifiedNameSyntax.Right.Identifier.Text.Contains(attributeName):
+                return true;
         }
 
-        result = default;
         return false;
     }
 

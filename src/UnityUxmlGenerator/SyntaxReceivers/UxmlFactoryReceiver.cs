@@ -15,19 +15,24 @@ internal sealed class UxmlFactoryReceiver : BaseReceiver
 
     public override void OnVisitSyntaxNode(SyntaxNode syntaxNode)
     {
-        if (syntaxNode.IsMemberHasAttribute<ClassDeclarationSyntax>(AttributeName,
-                out (ClassDeclarationSyntax Class, AttributeSyntax Attribute) result) == false)
+        if (syntaxNode.IsAttributeWithName(AttributeName, out var attribute) == false)
         {
             return;
         }
 
-        if (result.Class.InheritsFromAnyType())
+        var member = attribute!.GetParent<MemberDeclarationSyntax>();
+        if (member is not ClassDeclarationSyntax @class)
         {
-            _captures.Add(new UxmlFactoryCapture(result));
+            return;
         }
-        else if (result.Class is not null)
+
+        if (@class.InheritsFromAnyType())
         {
-            RegisterDiagnostic(ClassHasNoBaseClassError, result.Class.GetLocation(), result.Class.Identifier.Text);
+            _captures.Add(new UxmlFactoryCapture(@class, attribute!));
+        }
+        else
+        {
+            RegisterDiagnostic(ClassHasNoBaseClassError, @class.GetLocation(), @class.Identifier.Text);
         }
     }
 }
