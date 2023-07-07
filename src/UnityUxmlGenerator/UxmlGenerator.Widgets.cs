@@ -164,6 +164,7 @@ internal sealed partial class UxmlGenerator
     {
         var variableDeclaration = VariableDeclarator(Identifier(identifier));
 
+        // TODO: Change to BaseObjectCreationExpressionSyntax.
         if (initializer is not null)
         {
             variableDeclaration = variableDeclaration.WithInitializer(EqualsValueClause(ImplicitObjectCreationExpression()
