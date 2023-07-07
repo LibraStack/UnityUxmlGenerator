@@ -52,6 +52,13 @@ internal static class SyntaxNodeExtensions
 
     public static string? GetTypeNamespace(this SyntaxNode syntaxNode, GeneratorExecutionContext context)
     {
-        return GetTypeSymbol(syntaxNode, context)?.ContainingNamespace.ToString();
+        var containingNamespace = GetTypeSymbol(syntaxNode, context)?.ContainingNamespace;
+
+        if (containingNamespace is null || containingNamespace.IsGlobalNamespace)
+        {
+            return null;
+        }
+
+        return containingNamespace.ToString();
     }
 }

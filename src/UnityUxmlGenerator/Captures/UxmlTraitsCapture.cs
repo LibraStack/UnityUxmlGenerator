@@ -15,15 +15,15 @@ internal sealed class UxmlTraitsCapture : BaseCapture
     public TypeSyntax BaseClassType { get; }
     public List<(PropertyDeclarationSyntax Property, AttributeSyntax Attribute)> Properties { get; }
 
-    public string GetBaseClassName(out TypeSyntax? genericTypeSyntax)
+    public string GetBaseClassName(out IEnumerable<TypeSyntax>? genericTypeArguments)
     {
         if (BaseClassType is GenericNameSyntax genericNameSyntax)
         {
-            genericTypeSyntax = genericNameSyntax.TypeArgumentList.Arguments[0];
+            genericTypeArguments = genericNameSyntax.TypeArgumentList.Arguments;
             return genericNameSyntax.Identifier.Text;
         }
 
-        genericTypeSyntax = default;
+        genericTypeArguments = default;
 
         if (BaseClassType is IdentifierNameSyntax identifierNameSyntax)
         {

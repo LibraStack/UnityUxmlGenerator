@@ -133,28 +133,23 @@ internal sealed partial class UxmlGenerator
 
     private static string GetBaseClassName(GeneratorExecutionContext context, UxmlTraitsCapture capture)
     {
-        var baseClassName = capture.GetBaseClassName(out var genericClass);
+        var baseClassName = capture.GetBaseClassName(out var genericTypeArguments);
         var baseClassNamespace = capture.BaseClassType.GetTypeNamespace(context);
 
-        if (genericClass is null)
+        if (genericTypeArguments is null)
         {
             return $"global::{baseClassNamespace}.{baseClassName}";
         }
 
-        if (genericClass is PredefinedTypeSyntax predefinedTypeSyntax)
-        {
-            return $"global::{baseClassNamespace}.{baseClassName}<{predefinedTypeSyntax.Keyword.Text}>";
-        }
+        var stringBuilder = new StringBuilder();
 
-        if (genericClass is IdentifierNameSyntax customTypeSyntax)
-        {
-            var genericClassName = customTypeSyntax.Identifier.Text;
-            var genericClassNamespace = customTypeSyntax.GetTypeNamespace(context);
+        stringBuilder.Append("global::");
+        stringBuilder.Append(baseClassNamespace);
+        stringBuilder.Append('.');
+        stringBuilder.Append(baseClassName);
+        stringBuilder.AppendGenericString(context, genericTypeArguments);
 
-            return $"global::{baseClassNamespace}.{baseClassName}<global::{genericClassNamespace}.{genericClassName}>";
-        }
-
-        return string.Empty;
+        return stringBuilder.ToString();
     }
 
     private static bool TryGetUxmlAttributeInfo(GeneratorExecutionContext context, PropertyDeclarationSyntax property,
