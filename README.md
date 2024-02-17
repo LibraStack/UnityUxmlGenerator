@@ -47,12 +47,22 @@ public partial class CustomVisualElement : VisualElement
 
 You can install **UnityUxmlGenerator** in one of the following ways:
 
-<details><summary>1. Install via package file</summary>
+<details><summary>1. Install via Package Manager</summary>
 <br />
   
-  - Download `unityuxmlgenerator.tgz` from [releases](https://github.com/LibraStack/UnityUxmlGenerator/releases)
+  The package is available on the [OpenUPM](https://openupm.com/packages/com.chebanovdd.unityuxmlgenerator/).
+
+  - Open `Edit/Project Settings/Package Manager`
+  - Add a new `Scoped Registry` (or edit the existing OpenUPM entry)
+
+    ```
+    Name      package.openupm.com
+    URL       https://package.openupm.com
+    Scope(s)  com.chebanovdd.unityuxmlgenerator
+    ```
   - Open `Window/Package Manager`
-  - Select `Add package from tarball...`
+  - Select `My Registries`
+  - Install `UnityUxmlGenerator` package
   
 </details>
 
