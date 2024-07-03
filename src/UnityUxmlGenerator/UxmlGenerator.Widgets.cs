@@ -272,6 +272,11 @@ internal sealed partial class UxmlGenerator
             methodDeclaration = methodDeclaration.WithBody(Block(bodyStatements));
         }
 
+        if (bodyStatement is null && bodyStatements is null)
+        {
+            methodDeclaration = methodDeclaration.WithSemicolonToken(Token(SyntaxKind.SemicolonToken));
+        }
+
         return BaseWidgetDecoration(
             widget: methodDeclaration,
             modifier: modifier,
@@ -284,41 +289,47 @@ internal sealed partial class UxmlGenerator
     private static ParameterSyntax ParameterWidget(
         string identifier,
         TypeSyntax type,
-        bool addDefaultKeyword = false)
+        SyntaxKind defaultValueKeyword = SyntaxKind.None)
     {
         var parameterSyntax = Parameter(Identifier(identifier))
             .WithType(type);
 
-        if (addDefaultKeyword)
+        return defaultValueKeyword switch
         {
-            parameterSyntax = parameterSyntax.WithDefault(EqualsValueClause(
-                LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword))));
-        }
-
-        return parameterSyntax;
+            SyntaxKind.NullKeyword => parameterSyntax.WithDefault(EqualsValueClause(
+                LiteralExpression(SyntaxKind.NullLiteralExpression, Token(SyntaxKind.NullKeyword)))),
+            SyntaxKind.TrueKeyword => parameterSyntax.WithDefault(EqualsValueClause(
+                LiteralExpression(SyntaxKind.TrueLiteralExpression, Token(SyntaxKind.TrueKeyword)))),
+            SyntaxKind.FalseKeyword => parameterSyntax.WithDefault(EqualsValueClause(
+                LiteralExpression(SyntaxKind.FalseLiteralExpression, Token(SyntaxKind.FalseKeyword)))),
+            SyntaxKind.DefaultKeyword => parameterSyntax.WithDefault(EqualsValueClause(
+                LiteralExpression(SyntaxKind.DefaultLiteralExpression, Token(SyntaxKind.DefaultKeyword)))),
+            _ => parameterSyntax
+        };
     }
 
-    private static StatementSyntax MethodBaseCallWidget(
+    private static StatementSyntax MethodCallWidget(
+        ExpressionSyntax expression,
         string identifier,
         ArgumentSyntax? argument = null,
         IEnumerable<ArgumentSyntax>? arguments = null)
     {
-        var baseExpression = InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-            BaseExpression(), IdentifierName(identifier)));
+        var invocationExpression = InvocationExpression(MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+            expression, IdentifierName(identifier)));
 
         if (argument is not null)
         {
-            baseExpression = baseExpression.WithArgumentList(baseExpression.ArgumentList
-                .WithArguments(baseExpression.ArgumentList.Arguments.Add(argument)));
+            invocationExpression = invocationExpression.WithArgumentList(invocationExpression.ArgumentList
+                .WithArguments(invocationExpression.ArgumentList.Arguments.Add(argument)));
         }
 
         if (arguments is not null)
         {
-            baseExpression = baseExpression.WithArgumentList(baseExpression.ArgumentList
-                .WithArguments(baseExpression.ArgumentList.Arguments.AddRange(arguments)));
+            invocationExpression = invocationExpression.WithArgumentList(invocationExpression.ArgumentList
+                .WithArguments(invocationExpression.ArgumentList.Arguments.AddRange(arguments)));
         }
 
-        return ExpressionStatement(baseExpression);
+        return ExpressionStatement(invocationExpression);
     }
 
     private static StatementSyntax LocalVariableWidget(

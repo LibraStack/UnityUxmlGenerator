@@ -20,14 +20,6 @@ internal static class DiagnosticDescriptors
         defaultSeverity: DiagnosticSeverity.Error,
         isEnabledByDefault: true);
 
-    public static readonly DiagnosticDescriptor PropertyAndDefaultValueTypesMismatchError = new(
-        id: "UXMLG003",
-        title: "Types mismatch",
-        messageFormat: "UxmlAttribute for '{0}' property was not created. The default property and attribute value must be of the same type.",
-        category: typeof(UxmlGenerator).FullName,
-        defaultSeverity: DiagnosticSeverity.Error,
-        isEnabledByDefault: true);
-
     public static readonly DiagnosticDescriptor PropertyTypeIsNotSupportedError = new(
         id: "UXMLG004",
         title: "Property type is not supported",

@@ -64,7 +64,7 @@ internal sealed partial class UxmlGenerator
                 parameter: ParameterWidget(
                     identifier: "defaultValue",
                     type: NullableType(PredefinedType(Token(SyntaxKind.ObjectKeyword))),
-                    addDefaultKeyword: true),
+                    defaultValueKeyword: SyntaxKind.DefaultKeyword),
                 bodyStatement: AssignmentStatementWidget(
                     left: IdentifierName("DefaultValue"),
                     right: IdentifierName("defaultValue")),

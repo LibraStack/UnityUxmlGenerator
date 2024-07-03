@@ -23,13 +23,23 @@ internal sealed partial class UxmlGenerator
                 member: ClassWidget(
                     identifier: capture.ClassName,
                     modifier: SyntaxKind.PartialKeyword,
-                    member: ClassWidget(
-                        identifier: "UxmlTraits",
-                        modifiers: new[] { SyntaxKind.PublicKeyword, SyntaxKind.NewKeyword },
-                        baseType: SimpleBaseType(IdentifierName($"{GetBaseClassName(context, capture)}.UxmlTraits")),
-                        members: GetTraitsClassMembers(context, capture),
-                        addGeneratedCodeAttributes: true
-                    )),
+                    members: new MemberDeclarationSyntax[]
+                    {
+                        ClassWidget(
+                            identifier: "UxmlTraits",
+                            modifiers: new[] { SyntaxKind.PublicKeyword, SyntaxKind.NewKeyword },
+                            baseType: SimpleBaseType(IdentifierName($"{GetBaseClassName(context, capture)}.UxmlTraits")),
+                            members: GetTraitsClassMembers(context, capture),
+                            addGeneratedCodeAttributes: true),
+                        MethodWidget(
+                            identifier: "OnUxmlTraitsInitialized",
+                            type: PredefinedType(Token(SyntaxKind.VoidKeyword)),
+                            modifier: SyntaxKind.PartialKeyword,
+                            parameter: ParameterWidget(
+                                identifier: "uxmlAttributes",
+                                type: IdentifierName(string.Format(UnityUiElementsFullName, "IUxmlAttributes"))),
+                            addGeneratedCodeAttributes: true)
+                    }),
                 normalizeWhitespace: true)
             .GetText(Encoding.UTF8);
     }
@@ -39,7 +49,8 @@ internal sealed partial class UxmlGenerator
     {
         var initMethodBody = new List<StatementSyntax>
         {
-            MethodBaseCallWidget(
+            MethodCallWidget(
+                expression: BaseExpression(),
                 identifier: "Init",
                 arguments: new[]
                 {
@@ -72,6 +83,12 @@ internal sealed partial class UxmlGenerator
             initMethodBody.Add(GetAttributeValueAssignmentStatement(propertyName, fieldName));
             traitsClassMembers.Add(GetAttributeFieldDeclaration(uxmlAttributeInfo));
         }
+
+        initMethodBody.Add(MethodCallWidget(
+            expression: IdentifierName("control"),
+            identifier: "OnUxmlTraitsInitialized",
+            argument: Argument(IdentifierName("bag")))
+        );
 
         var initMethod = MethodWidget(
             identifier: "Init",
@@ -267,11 +284,20 @@ internal sealed partial class UxmlGenerator
 
         return attribute.ArgumentList.Arguments.First().Expression switch
         {
+            IdentifierNameSyntax identifierName => identifierName.Identifier.Text,
+            PrefixUnaryExpressionSyntax unary => GetUnaryExpressionValue(unary),
             LiteralExpressionSyntax literal => GetLiteralExpressionValue(literal),
             InvocationExpressionSyntax invocation => GetInvocationExpressionValue(invocation),
             MemberAccessExpressionSyntax member => GetMemberAccessExpressionValue(member),
             _ => null
         };
+    }
+
+    private static string GetUnaryExpressionValue(PrefixUnaryExpressionSyntax unary)
+    {
+        var value = unary.Operand.GetText().ToString();
+
+        return unary.IsKind(SyntaxKind.UnaryMinusExpression) ? $"-{value}" : value;
     }
 
     private static string? GetLiteralExpressionValue(LiteralExpressionSyntax literal)

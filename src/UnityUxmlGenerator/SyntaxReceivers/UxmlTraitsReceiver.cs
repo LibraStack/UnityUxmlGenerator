@@ -1,5 +1,4 @@
 ﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using UnityUxmlGenerator.Captures;
 using UnityUxmlGenerator.Extensions;
@@ -27,16 +26,6 @@ internal sealed class UxmlTraitsReceiver : BaseReceiver
             return;
         }
 
-        if (attribute!.ArgumentList is not null && attribute.ArgumentList.Arguments.Any())
-        {
-            if (HasSameType(property, attribute.ArgumentList.Arguments.First()) == false)
-            {
-                RegisterDiagnostic(PropertyAndDefaultValueTypesMismatchError, property.GetLocation(),
-                    property.GetName());
-                return;
-            }
-        }
-
         var @class = property.GetParent<ClassDeclarationSyntax>();
         if (@class.InheritsFromAnyType() == false)
         {
@@ -59,53 +48,5 @@ internal sealed class UxmlTraitsReceiver : BaseReceiver
         }
 
         uxmlTraits.Properties.Add((property, attribute));
-    }
-
-    private static bool HasSameType(BasePropertyDeclarationSyntax property, AttributeArgumentSyntax attributeArgument)
-    {
-        var parameter = attributeArgument.Expression;
-
-        if (parameter.IsKind(SyntaxKind.DefaultLiteralExpression))
-        {
-            return true;
-        }
-
-        if (property.Type is PredefinedTypeSyntax predefinedType)
-        {
-            if (predefinedType.IsBoolType() &&
-                (parameter.IsKind(SyntaxKind.TrueLiteralExpression) ||
-                 parameter.IsKind(SyntaxKind.FalseLiteralExpression)))
-            {
-                return true;
-            }
-
-            if (predefinedType.IsStringType() &&
-                parameter.IsKind(SyntaxKind.StringLiteralExpression))
-            {
-                return true;
-            }
-
-            if (predefinedType.IsNumericType() &&
-                parameter.IsKind(SyntaxKind.NumericLiteralExpression))
-            {
-                return true;
-            }
-        }
-
-        SyntaxToken? propertyTypeIdentifier = property.Type switch
-        {
-            IdentifierNameSyntax identifierName => identifierName.Identifier,
-            QualifiedNameSyntax qualifiedNameSyntax => qualifiedNameSyntax.Right.Identifier,
-            _ => null
-        };
-
-        if (propertyTypeIdentifier is null)
-        {
-            return false;
-        }
-
-        return propertyTypeIdentifier.Value.IsKind(SyntaxKind.IdentifierToken) &&
-               (parameter.IsKind(SyntaxKind.InvocationExpression) ||
-                parameter.IsKind(SyntaxKind.SimpleMemberAccessExpression));
     }
 }
